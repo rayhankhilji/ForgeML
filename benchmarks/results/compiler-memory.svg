@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="672" viewBox="0 0 1060 672" role="img" aria-labelledby="title desc">
+<title id="title">Compiler-planned intermediate storage</title>
+<desc id="desc">Derived from captured IR plans · excludes inputs, weights, outputs and backend scratch · NOT peak RSS/VRAM</desc>
+<rect width="100%" height="100%" rx="16" fill="#0b1220"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+<text x="28" y="38" fill="#f1f5f9" font-size="21" font-weight="700">Compiler-planned intermediate storage</text>
+<text x="28" y="63" fill="#94a3b8" font-size="12">Derived from captured IR plans · excludes inputs, weights, outputs and backend scratch · NOT peak RSS/VRAM</text>
+<rect x="28" y="82" width="11" height="11" fill="#94a3b8"/>
+<text x="47" y="92" fill="#cbd5e1" font-size="12">Unoptimized / distinct buffers</text>
+<rect x="328" y="82" width="11" height="11" fill="#fbbf24"/>
+<text x="347" y="92" fill="#cbd5e1" font-size="12">Unoptimized / reused slots</text>
+<rect x="628" y="82" width="11" height="11" fill="#67e8f9"/>
+<text x="647" y="92" fill="#cbd5e1" font-size="12">Optimized / reused slots</text>
+<path d="M230.0 115 V636" stroke="#263244" stroke-width="1"/>
+<text x="230.0" y="657" fill="#94a3b8" font-size="11">0.00 KiB</text>
+<path d="M402.5 115 V636" stroke="#263244" stroke-width="1"/>
+<text x="402.5" y="657" fill="#94a3b8" font-size="11">143.36 KiB</text>
+<path d="M575.0 115 V636" stroke="#263244" stroke-width="1"/>
+<text x="575.0" y="657" fill="#94a3b8" font-size="11">286.72 KiB</text>
+<path d="M747.5 115 V636" stroke="#263244" stroke-width="1"/>
+<text x="747.5" y="657" fill="#94a3b8" font-size="11">430.08 KiB</text>
+<path d="M920.0 115 V636" stroke="#263244" stroke-width="1"/>
+<text x="920.0" y="657" fill="#94a3b8" font-size="11">573.44 KiB</text>
+<text x="28" y="137" fill="#e2e8f0" font-size="12">mlp_8_64_128</text>
+<rect x="230" y="122" width="15.64" height="12" rx="2" fill="#94a3b8"/>
+<text x="252.64" y="133" fill="#cbd5e1" font-size="11">13.000</text>
+<rect x="230" y="141" width="9.63" height="12" rx="2" fill="#fbbf24"/>
+<text x="246.63" y="152" fill="#cbd5e1" font-size="11">8.000</text>
+<rect x="230" y="160" width="6.02" height="12" rx="2" fill="#67e8f9"/>
+<text x="243.02" y="171" fill="#cbd5e1" font-size="11">5.000</text>
+<text x="28" y="224" fill="#e2e8f0" font-size="12">residual_8_64_128</text>
+<rect x="230" y="209" width="19.25" height="12" rx="2" fill="#94a3b8"/>
+<text x="256.25" y="220" fill="#cbd5e1" font-size="11">16.000</text>
+<rect x="230" y="228" width="9.63" height="12" rx="2" fill="#fbbf24"/>
+<text x="246.63" y="239" fill="#cbd5e1" font-size="11">8.000</text>
+<rect x="230" y="247" width="7.22" height="12" rx="2" fill="#67e8f9"/>
+<text x="244.22" y="258" fill="#cbd5e1" font-size="11">6.000</text>
+<text x="28" y="311" fill="#e2e8f0" font-size="12">mlp_32_128_256</text>
+<rect x="230" y="296" width="125.14" height="12" rx="2" fill="#94a3b8"/>
+<text x="362.14" y="307" fill="#cbd5e1" font-size="11">104.000</text>
+<rect x="230" y="315" width="77.01" height="12" rx="2" fill="#fbbf24"/>
+<text x="314.01" y="326" fill="#cbd5e1" font-size="11">64.000</text>
+<rect x="230" y="334" width="48.13" height="12" rx="2" fill="#67e8f9"/>
+<text x="285.13" y="345" fill="#cbd5e1" font-size="11">40.000</text>
+<text x="28" y="398" fill="#e2e8f0" font-size="12">residual_32_128_256</text>
+<rect x="230" y="383" width="154.02" height="12" rx="2" fill="#94a3b8"/>
+<text x="391.02" y="394" fill="#cbd5e1" font-size="11">128.000</text>
+<rect x="230" y="402" width="77.01" height="12" rx="2" fill="#fbbf24"/>
+<text x="314.01" y="413" fill="#cbd5e1" font-size="11">64.000</text>
+<rect x="230" y="421" width="57.76" height="12" rx="2" fill="#67e8f9"/>
+<text x="294.76" y="432" fill="#cbd5e1" font-size="11">48.000</text>
+<text x="28" y="485" fill="#e2e8f0" font-size="12">mlp_64_256_512</text>
+<rect x="230" y="470" width="500.56" height="12" rx="2" fill="#94a3b8"/>
+<text x="737.56" y="481" fill="#cbd5e1" font-size="11">416.000</text>
+<rect x="230" y="489" width="308.04" height="12" rx="2" fill="#fbbf24"/>
+<text x="545.04" y="500" fill="#cbd5e1" font-size="11">256.000</text>
+<rect x="230" y="508" width="192.52" height="12" rx="2" fill="#67e8f9"/>
+<text x="429.52" y="519" fill="#cbd5e1" font-size="11">160.000</text>
+<text x="28" y="572" fill="#e2e8f0" font-size="12">residual_64_256_512</text>
+<rect x="230" y="557" width="616.07" height="12" rx="2" fill="#94a3b8"/>
+<text x="853.07" y="568" fill="#cbd5e1" font-size="11">512.000</text>
+<rect x="230" y="576" width="308.04" height="12" rx="2" fill="#fbbf24"/>
+<text x="545.04" y="587" fill="#cbd5e1" font-size="11">256.000</text>
+<rect x="230" y="595" width="231.03" height="12" rx="2" fill="#67e8f9"/>
+<text x="468.03" y="606" fill="#cbd5e1" font-size="11">192.000</text>
+</g></svg>

@@ -1,0 +1,98 @@
+{
+  "environment": {
+    "captured_at_utc": "2026-09-23T19:24:35.239991+00:00",
+    "cuda_runtime": null,
+    "device": "cpu",
+    "git_commit": "4ee14c979daa5aedb3327bec24017db911fe112b",
+    "git_dirty": false,
+    "machine": "x86_64",
+    "percentile_method": "linear_interpolation_at_(n-1)*q",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit",
+    "processor": "i386",
+    "python": "3.12.14",
+    "timing": "synchronized_host_wall_clock",
+    "torch": "2.2.2",
+    "torch_threads": 1
+  },
+  "rows": [
+    {
+      "eager_ms": 0.135763,
+      "name": "mlp_8_64_128",
+      "optimized_ms": 0.22408,
+      "optimized_nodes": 3,
+      "optimized_p95_ms": 0.4420728,
+      "optimized_planned_kib": 5.0,
+      "original_nodes": 5,
+      "speedup": 0.6058684398429132,
+      "unoptimized_ms": 0.242716,
+      "unoptimized_naive_kib": 13.0,
+      "unoptimized_planned_kib": 8.0
+    },
+    {
+      "eager_ms": 0.231132,
+      "name": "residual_8_64_128",
+      "optimized_ms": 0.40814,
+      "optimized_nodes": 4,
+      "optimized_p95_ms": 0.9756623999999993,
+      "optimized_planned_kib": 6.0,
+      "original_nodes": 6,
+      "speedup": 0.5663056794237271,
+      "unoptimized_ms": 0.403317,
+      "unoptimized_naive_kib": 16.0,
+      "unoptimized_planned_kib": 8.0
+    },
+    {
+      "eager_ms": 0.350965,
+      "name": "mlp_32_128_256",
+      "optimized_ms": 0.444499,
+      "optimized_nodes": 3,
+      "optimized_p95_ms": 0.9853545999999992,
+      "optimized_planned_kib": 40.0,
+      "original_nodes": 5,
+      "speedup": 0.7895743297510232,
+      "unoptimized_ms": 0.4961,
+      "unoptimized_naive_kib": 104.0,
+      "unoptimized_planned_kib": 64.0
+    },
+    {
+      "eager_ms": 0.442369,
+      "name": "residual_32_128_256",
+      "optimized_ms": 0.409425,
+      "optimized_nodes": 4,
+      "optimized_p95_ms": 1.171225599999999,
+      "optimized_planned_kib": 48.0,
+      "original_nodes": 6,
+      "speedup": 1.080464065457654,
+      "unoptimized_ms": 0.567011,
+      "unoptimized_naive_kib": 128.0,
+      "unoptimized_planned_kib": 64.0
+    },
+    {
+      "eager_ms": 1.525621,
+      "name": "mlp_64_256_512",
+      "optimized_ms": 1.762498,
+      "optimized_nodes": 3,
+      "optimized_p95_ms": 8.237822199999997,
+      "optimized_planned_kib": 160.0,
+      "original_nodes": 5,
+      "speedup": 0.8656015496187797,
+      "unoptimized_ms": 1.792957,
+      "unoptimized_naive_kib": 416.0,
+      "unoptimized_planned_kib": 256.0
+    },
+    {
+      "eager_ms": 2.193535,
+      "name": "residual_64_256_512",
+      "optimized_ms": 1.695348,
+      "optimized_nodes": 4,
+      "optimized_p95_ms": 35.525207399999914,
+      "optimized_planned_kib": 192.0,
+      "original_nodes": 6,
+      "speedup": 1.2938553028640725,
+      "unoptimized_ms": 1.670966,
+      "unoptimized_naive_kib": 512.0,
+      "unoptimized_planned_kib": 256.0
+    }
+  ],
+  "source_sha256": "77b32f9c5b4416100a6e390f8ea919a61edc39e8fee2ae2bb5a60ca5f7d89a0b"
+}

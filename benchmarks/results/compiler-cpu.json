@@ -1,0 +1,3242 @@
+{
+  "environment": {
+    "captured_at_utc": "2026-09-23T19:24:35.239991+00:00",
+    "cuda_runtime": null,
+    "device": "cpu",
+    "git_commit": "4ee14c979daa5aedb3327bec24017db911fe112b",
+    "git_dirty": false,
+    "machine": "x86_64",
+    "percentile_method": "linear_interpolation_at_(n-1)*q",
+    "platform": "macOS-26.6.2-x86_64-i386-64bit",
+    "processor": "i386",
+    "python": "3.12.14",
+    "timing": "synchronized_host_wall_clock",
+    "torch": "2.2.2",
+    "torch_threads": 1
+  },
+  "measured": true,
+  "schema_version": 1,
+  "scope": {
+    "excluded": [
+      "model_initialization",
+      "compilation",
+      "autotuning",
+      "warmup"
+    ],
+    "latency": "whole_call_including_python_dispatch_and_output_ownership",
+    "memory": "planned_intermediate_storage_not_allocator_peak",
+    "warning": "CPU graph fusion does not imply CPU kernel fusion or speedup"
+  },
+  "settings": {
+    "autotune": false,
+    "backend": "torch",
+    "dtype": "torch.float32",
+    "gradients": false,
+    "repeats": 25,
+    "seed": 2026,
+    "tf32": false,
+    "variant_order": "rotating_per_repetition",
+    "warmup": 5
+  },
+  "suite": "forgeml.compiler",
+  "workloads": [
+    {
+      "autotuning": null,
+      "batch": 8,
+      "compile_ms": {
+        "optimized": 94.251857,
+        "unoptimized": 1616.778631
+      },
+      "correctness": {
+        "optimized": {
+          "atol": 0.0001,
+          "max_absolute_error": 0.0,
+          "passed": true,
+          "rtol": 0.0001
+        },
+        "unoptimized": {
+          "atol": 0.0001,
+          "max_absolute_error": 0.0,
+          "passed": true,
+          "rtol": 0.0001
+        }
+      },
+      "dtype": "torch.float32",
+      "hidden": 128,
+      "name": "mlp_8_64_128",
+      "optimized": {
+        "backend": "torch",
+        "graph": {
+          "constants": {
+            "_0_bias_3": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128
+              ]
+            },
+            "_0_weight_t_1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                64,
+                128
+              ]
+            },
+            "_2_bias_6": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                32
+              ]
+            },
+            "_2_weight_t_4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128,
+                32
+              ]
+            }
+          },
+          "inputs": {
+            "input_0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                8,
+                64
+              ]
+            }
+          },
+          "nodes": [
+            {
+              "attrs": {
+                "approximate": "tanh"
+              },
+              "inputs": [
+                "input_0",
+                "_0_weight_t_1",
+                "_0_bias_3"
+              ],
+              "name": "_1",
+              "op": "fused_linear_gelu",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_1",
+                "_2_weight_t_4"
+              ],
+              "name": "_2_matmul_5",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  32
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_2_matmul_5",
+                "_2_bias_6"
+              ],
+              "name": "_2",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  32
+                ]
+              }
+            }
+          ],
+          "output_is_tuple": false,
+          "outputs": [
+            "_2"
+          ]
+        },
+        "kernel_configs": {},
+        "kernel_plan": {
+          "_1": "torch",
+          "_2": "torch",
+          "_2_matmul_5": "torch"
+        },
+        "memory_plan": {
+          "allocations": {
+            "_1": {
+              "first": 0,
+              "last": 1,
+              "size_bytes": 4096,
+              "slot": 0
+            },
+            "_2_matmul_5": {
+              "first": 1,
+              "last": 2,
+              "size_bytes": 1024,
+              "slot": 1
+            }
+          },
+          "naive_bytes": 5120,
+          "planned_bytes": 5120,
+          "slot_specs": {
+            "0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                1024
+              ]
+            },
+            "1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256
+              ]
+            }
+          }
+        },
+        "optimized_nodes": 3,
+        "original_nodes": 5,
+        "passes": [
+          {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 5,
+            "nodes_before": 5
+          },
+          {
+            "name": "fold_constants",
+            "nodes_after": 5,
+            "nodes_before": 5
+          },
+          {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 5,
+            "nodes_before": 5
+          },
+          {
+            "name": "fuse_linear_gelu",
+            "nodes_after": 3,
+            "nodes_before": 5
+          },
+          {
+            "name": "schedule",
+            "nodes_after": 3,
+            "nodes_before": 3
+          }
+        ]
+      },
+      "output": 32,
+      "timings": {
+        "eager": {
+          "count": 25,
+          "max_ms": 0.333347,
+          "median_ms": 0.135763,
+          "min_ms": 0.079141,
+          "p95_ms": 0.2436397999999998,
+          "rows_per_second": 58926.217010525696,
+          "samples_ms": [
+            0.144244,
+            0.140997,
+            0.132689,
+            0.116215,
+            0.134847,
+            0.111483,
+            0.115024,
+            0.141593,
+            0.12674,
+            0.121157,
+            0.144001,
+            0.333347,
+            0.136713,
+            0.14829,
+            0.133344,
+            0.124321,
+            0.183255,
+            0.175438,
+            0.159058,
+            0.166174,
+            0.119681,
+            0.099067,
+            0.258736,
+            0.135763,
+            0.079141
+          ],
+          "speedup_vs_eager": 1.0
+        },
+        "optimized": {
+          "count": 25,
+          "max_ms": 0.948123,
+          "median_ms": 0.22408,
+          "min_ms": 0.182312,
+          "p95_ms": 0.4420728,
+          "rows_per_second": 35701.53516601214,
+          "samples_ms": [
+            0.184951,
+            0.195605,
+            0.19588,
+            0.198018,
+            0.187968,
+            0.203304,
+            0.227999,
+            0.182312,
+            0.22408,
+            0.330478,
+            0.262428,
+            0.257585,
+            0.203578,
+            0.199142,
+            0.235983,
+            0.948123,
+            0.242536,
+            0.442926,
+            0.43866,
+            0.192319,
+            0.223398,
+            0.193892,
+            0.292234,
+            0.281048,
+            0.291869
+          ],
+          "speedup_vs_eager": 0.6058684398429132
+        },
+        "unoptimized": {
+          "count": 25,
+          "max_ms": 0.728698,
+          "median_ms": 0.242716,
+          "min_ms": 0.195562,
+          "p95_ms": 0.5047705999999994,
+          "rows_per_second": 32960.332240148986,
+          "samples_ms": [
+            0.24438,
+            0.195562,
+            0.283299,
+            0.228675,
+            0.215581,
+            0.23805,
+            0.242716,
+            0.22293,
+            0.239746,
+            0.261465,
+            0.542319,
+            0.297896,
+            0.241918,
+            0.208635,
+            0.267841,
+            0.297577,
+            0.28414,
+            0.728698,
+            0.296446,
+            0.250062,
+            0.2237,
+            0.199549,
+            0.354577,
+            0.20747,
+            0.234552
+          ],
+          "speedup_vs_eager": 0.5593491982399182
+        }
+      },
+      "unoptimized": {
+        "backend": "torch",
+        "graph": {
+          "constants": {
+            "_0_bias_3": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128
+              ]
+            },
+            "_0_weight_t_1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                64,
+                128
+              ]
+            },
+            "_2_bias_6": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                32
+              ]
+            },
+            "_2_weight_t_4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128,
+                32
+              ]
+            }
+          },
+          "inputs": {
+            "input_0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                8,
+                64
+              ]
+            }
+          },
+          "nodes": [
+            {
+              "attrs": {},
+              "inputs": [
+                "input_0",
+                "_0_weight_t_1"
+              ],
+              "name": "_0_matmul_2",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_0_matmul_2",
+                "_0_bias_3"
+              ],
+              "name": "_0",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "approximate": "tanh"
+              },
+              "inputs": [
+                "_0"
+              ],
+              "name": "_1",
+              "op": "gelu",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_1",
+                "_2_weight_t_4"
+              ],
+              "name": "_2_matmul_5",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  32
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_2_matmul_5",
+                "_2_bias_6"
+              ],
+              "name": "_2",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  32
+                ]
+              }
+            }
+          ],
+          "output_is_tuple": false,
+          "outputs": [
+            "_2"
+          ]
+        },
+        "kernel_configs": {},
+        "kernel_plan": {
+          "_0": "torch",
+          "_0_matmul_2": "torch",
+          "_1": "torch",
+          "_2": "torch",
+          "_2_matmul_5": "torch"
+        },
+        "memory_plan": {
+          "allocations": {
+            "_0": {
+              "first": 1,
+              "last": 2,
+              "size_bytes": 4096,
+              "slot": 1
+            },
+            "_0_matmul_2": {
+              "first": 0,
+              "last": 1,
+              "size_bytes": 4096,
+              "slot": 0
+            },
+            "_1": {
+              "first": 2,
+              "last": 3,
+              "size_bytes": 4096,
+              "slot": 0
+            },
+            "_2_matmul_5": {
+              "first": 3,
+              "last": 4,
+              "size_bytes": 1024,
+              "slot": 1
+            }
+          },
+          "naive_bytes": 13312,
+          "planned_bytes": 8192,
+          "slot_specs": {
+            "0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                1024
+              ]
+            },
+            "1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                1024
+              ]
+            }
+          }
+        },
+        "optimized_nodes": 5,
+        "original_nodes": 5,
+        "passes": []
+      },
+      "width": 64
+    },
+    {
+      "autotuning": null,
+      "batch": 8,
+      "compile_ms": {
+        "optimized": 74.287959,
+        "unoptimized": 29.219221
+      },
+      "correctness": {
+        "optimized": {
+          "atol": 0.0001,
+          "max_absolute_error": 0.0,
+          "passed": true,
+          "rtol": 0.0001
+        },
+        "unoptimized": {
+          "atol": 0.0001,
+          "max_absolute_error": 0.0,
+          "passed": true,
+          "rtol": 0.0001
+        }
+      },
+      "dtype": "torch.float32",
+      "hidden": 128,
+      "name": "residual_8_64_128",
+      "optimized": {
+        "backend": "torch",
+        "graph": {
+          "constants": {
+            "down_bias_6": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                64
+              ]
+            },
+            "down_weight_t_4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128,
+                64
+              ]
+            },
+            "up_bias_3": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128
+              ]
+            },
+            "up_weight_t_1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                64,
+                128
+              ]
+            }
+          },
+          "inputs": {
+            "input_0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                8,
+                64
+              ]
+            }
+          },
+          "nodes": [
+            {
+              "attrs": {
+                "approximate": "tanh"
+              },
+              "inputs": [
+                "input_0",
+                "up_weight_t_1",
+                "up_bias_3"
+              ],
+              "name": "activation",
+              "op": "fused_linear_gelu",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "activation",
+                "down_weight_t_4"
+              ],
+              "name": "down_matmul_5",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  64
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "down_matmul_5",
+                "down_bias_6"
+              ],
+              "name": "down",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  64
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "down",
+                "input_0"
+              ],
+              "name": "add",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  64
+                ]
+              }
+            }
+          ],
+          "output_is_tuple": false,
+          "outputs": [
+            "add"
+          ]
+        },
+        "kernel_configs": {},
+        "kernel_plan": {
+          "activation": "torch",
+          "add": "torch",
+          "down": "torch",
+          "down_matmul_5": "torch"
+        },
+        "memory_plan": {
+          "allocations": {
+            "activation": {
+              "first": 0,
+              "last": 1,
+              "size_bytes": 4096,
+              "slot": 0
+            },
+            "down": {
+              "first": 2,
+              "last": 3,
+              "size_bytes": 2048,
+              "slot": 0
+            },
+            "down_matmul_5": {
+              "first": 1,
+              "last": 2,
+              "size_bytes": 2048,
+              "slot": 1
+            }
+          },
+          "naive_bytes": 8192,
+          "planned_bytes": 6144,
+          "slot_specs": {
+            "0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                1024
+              ]
+            },
+            "1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                512
+              ]
+            }
+          }
+        },
+        "optimized_nodes": 4,
+        "original_nodes": 6,
+        "passes": [
+          {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 6,
+            "nodes_before": 6
+          },
+          {
+            "name": "fold_constants",
+            "nodes_after": 6,
+            "nodes_before": 6
+          },
+          {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 6,
+            "nodes_before": 6
+          },
+          {
+            "name": "fuse_linear_gelu",
+            "nodes_after": 4,
+            "nodes_before": 6
+          },
+          {
+            "name": "schedule",
+            "nodes_after": 4,
+            "nodes_before": 4
+          }
+        ]
+      },
+      "output": 64,
+      "timings": {
+        "eager": {
+          "count": 25,
+          "max_ms": 0.546262,
+          "median_ms": 0.231132,
+          "min_ms": 0.108128,
+          "p95_ms": 0.48563299999999976,
+          "rows_per_second": 34612.25619992039,
+          "samples_ms": [
+            0.356659,
+            0.249202,
+            0.156266,
+            0.15219,
+            0.202799,
+            0.181324,
+            0.231132,
+            0.180514,
+            0.412241,
+            0.503981,
+            0.120296,
+            0.227078,
+            0.108128,
+            0.217167,
+            0.258851,
+            0.319591,
+            0.188897,
+            0.156717,
+            0.378464,
+            0.546262,
+            0.215395,
+            0.378913,
+            0.259695,
+            0.312457,
+            0.242098
+          ],
+          "speedup_vs_eager": 1.0
+        },
+        "optimized": {
+          "count": 25,
+          "max_ms": 1.096988,
+          "median_ms": 0.40814,
+          "min_ms": 0.14026,
+          "p95_ms": 0.9756623999999993,
+          "rows_per_second": 19601.11726368403,
+          "samples_ms": [
+            0.492167,
+            0.14026,
+            0.28037,
+            0.467298,
+            0.436401,
+            0.490956,
+            0.280993,
+            0.249215,
+            0.283002,
+            0.774592,
+            0.390434,
+            0.239646,
+            0.16099,
+            1.02593,
+            1.096988,
+            0.479309,
+            0.465904,
+            0.374485,
+            0.40814,
+            0.317609,
+            0.578834,
+            0.334115,
+            0.277007,
+            0.598325,
+            0.528071
+          ],
+          "speedup_vs_eager": 0.5663056794237271
+        },
+        "unoptimized": {
+          "count": 25,
+          "max_ms": 0.897311,
+          "median_ms": 0.403317,
+          "min_ms": 0.17611,
+          "p95_ms": 0.8054853999999999,
+          "rows_per_second": 19835.514000153726,
+          "samples_ms": [
+            0.311395,
+            0.214421,
+            0.296878,
+            0.425186,
+            0.312969,
+            0.897311,
+            0.672406,
+            0.262507,
+            0.415205,
+            0.786195,
+            0.486842,
+            0.2671,
+            0.193479,
+            0.17611,
+            0.532326,
+            0.783615,
+            0.810308,
+            0.30288,
+            0.638597,
+            0.432291,
+            0.377067,
+            0.586246,
+            0.332928,
+            0.403317,
+            0.327228
+          ],
+          "speedup_vs_eager": 0.5730777527354414
+        }
+      },
+      "unoptimized": {
+        "backend": "torch",
+        "graph": {
+          "constants": {
+            "down_bias_6": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                64
+              ]
+            },
+            "down_weight_t_4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128,
+                64
+              ]
+            },
+            "up_bias_3": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128
+              ]
+            },
+            "up_weight_t_1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                64,
+                128
+              ]
+            }
+          },
+          "inputs": {
+            "input_0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                8,
+                64
+              ]
+            }
+          },
+          "nodes": [
+            {
+              "attrs": {},
+              "inputs": [
+                "input_0",
+                "up_weight_t_1"
+              ],
+              "name": "up_matmul_2",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "up_matmul_2",
+                "up_bias_3"
+              ],
+              "name": "up",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "approximate": "tanh"
+              },
+              "inputs": [
+                "up"
+              ],
+              "name": "activation",
+              "op": "gelu",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "activation",
+                "down_weight_t_4"
+              ],
+              "name": "down_matmul_5",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  64
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "down_matmul_5",
+                "down_bias_6"
+              ],
+              "name": "down",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  64
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "down",
+                "input_0"
+              ],
+              "name": "add",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  8,
+                  64
+                ]
+              }
+            }
+          ],
+          "output_is_tuple": false,
+          "outputs": [
+            "add"
+          ]
+        },
+        "kernel_configs": {},
+        "kernel_plan": {
+          "activation": "torch",
+          "add": "torch",
+          "down": "torch",
+          "down_matmul_5": "torch",
+          "up": "torch",
+          "up_matmul_2": "torch"
+        },
+        "memory_plan": {
+          "allocations": {
+            "activation": {
+              "first": 2,
+              "last": 3,
+              "size_bytes": 4096,
+              "slot": 0
+            },
+            "down": {
+              "first": 4,
+              "last": 5,
+              "size_bytes": 2048,
+              "slot": 0
+            },
+            "down_matmul_5": {
+              "first": 3,
+              "last": 4,
+              "size_bytes": 2048,
+              "slot": 1
+            },
+            "up": {
+              "first": 1,
+              "last": 2,
+              "size_bytes": 4096,
+              "slot": 1
+            },
+            "up_matmul_2": {
+              "first": 0,
+              "last": 1,
+              "size_bytes": 4096,
+              "slot": 0
+            }
+          },
+          "naive_bytes": 16384,
+          "planned_bytes": 8192,
+          "slot_specs": {
+            "0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                1024
+              ]
+            },
+            "1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                1024
+              ]
+            }
+          }
+        },
+        "optimized_nodes": 6,
+        "original_nodes": 6,
+        "passes": []
+      },
+      "width": 64
+    },
+    {
+      "autotuning": null,
+      "batch": 32,
+      "compile_ms": {
+        "optimized": 74.4966,
+        "unoptimized": 24.741553
+      },
+      "correctness": {
+        "optimized": {
+          "atol": 0.0001,
+          "max_absolute_error": 0.0,
+          "passed": true,
+          "rtol": 0.0001
+        },
+        "unoptimized": {
+          "atol": 0.0001,
+          "max_absolute_error": 0.0,
+          "passed": true,
+          "rtol": 0.0001
+        }
+      },
+      "dtype": "torch.float32",
+      "hidden": 256,
+      "name": "mlp_32_128_256",
+      "optimized": {
+        "backend": "torch",
+        "graph": {
+          "constants": {
+            "_0_bias_3": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256
+              ]
+            },
+            "_0_weight_t_1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128,
+                256
+              ]
+            },
+            "_2_bias_6": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                64
+              ]
+            },
+            "_2_weight_t_4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256,
+                64
+              ]
+            }
+          },
+          "inputs": {
+            "input_0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                32,
+                128
+              ]
+            }
+          },
+          "nodes": [
+            {
+              "attrs": {
+                "approximate": "tanh"
+              },
+              "inputs": [
+                "input_0",
+                "_0_weight_t_1",
+                "_0_bias_3"
+              ],
+              "name": "_1",
+              "op": "fused_linear_gelu",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  256
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_1",
+                "_2_weight_t_4"
+              ],
+              "name": "_2_matmul_5",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  64
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_2_matmul_5",
+                "_2_bias_6"
+              ],
+              "name": "_2",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  64
+                ]
+              }
+            }
+          ],
+          "output_is_tuple": false,
+          "outputs": [
+            "_2"
+          ]
+        },
+        "kernel_configs": {},
+        "kernel_plan": {
+          "_1": "torch",
+          "_2": "torch",
+          "_2_matmul_5": "torch"
+        },
+        "memory_plan": {
+          "allocations": {
+            "_1": {
+              "first": 0,
+              "last": 1,
+              "size_bytes": 32768,
+              "slot": 0
+            },
+            "_2_matmul_5": {
+              "first": 1,
+              "last": 2,
+              "size_bytes": 8192,
+              "slot": 1
+            }
+          },
+          "naive_bytes": 40960,
+          "planned_bytes": 40960,
+          "slot_specs": {
+            "0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                8192
+              ]
+            },
+            "1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                2048
+              ]
+            }
+          }
+        },
+        "optimized_nodes": 3,
+        "original_nodes": 5,
+        "passes": [
+          {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 5,
+            "nodes_before": 5
+          },
+          {
+            "name": "fold_constants",
+            "nodes_after": 5,
+            "nodes_before": 5
+          },
+          {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 5,
+            "nodes_before": 5
+          },
+          {
+            "name": "fuse_linear_gelu",
+            "nodes_after": 3,
+            "nodes_before": 5
+          },
+          {
+            "name": "schedule",
+            "nodes_after": 3,
+            "nodes_before": 3
+          }
+        ]
+      },
+      "output": 64,
+      "timings": {
+        "eager": {
+          "count": 25,
+          "max_ms": 1.673941,
+          "median_ms": 0.350965,
+          "min_ms": 0.247383,
+          "p95_ms": 0.6826483999999995,
+          "rows_per_second": 91177.18290997678,
+          "samples_ms": [
+            0.304117,
+            0.297,
+            0.340349,
+            0.717306,
+            0.539793,
+            0.292535,
+            0.272272,
+            0.449652,
+            0.291534,
+            0.420494,
+            0.520746,
+            0.295318,
+            0.482669,
+            1.673941,
+            0.351347,
+            0.300865,
+            0.375082,
+            0.462333,
+            0.314064,
+            0.290821,
+            0.251591,
+            0.247383,
+            0.416899,
+            0.544018,
+            0.350965
+          ],
+          "speedup_vs_eager": 1.0
+        },
+        "optimized": {
+          "count": 25,
+          "max_ms": 1.330149,
+          "median_ms": 0.444499,
+          "min_ms": 0.284163,
+          "p95_ms": 0.9853545999999992,
+          "rows_per_second": 71991.16308473135,
+          "samples_ms": [
+            0.347024,
+            0.363374,
+            0.757217,
+            1.330149,
+            0.655343,
+            0.465538,
+            0.343568,
+            0.332059,
+            0.523573,
+            0.496311,
+            0.410314,
+            0.653329,
+            0.567771,
+            0.558789,
+            1.042389,
+            0.419321,
+            0.607848,
+            0.60432,
+            0.385882,
+            0.425726,
+            0.321657,
+            0.308946,
+            0.441729,
+            0.444499,
+            0.284163
+          ],
+          "speedup_vs_eager": 0.7895743297510232
+        },
+        "unoptimized": {
+          "count": 25,
+          "max_ms": 1.132905,
+          "median_ms": 0.4961,
+          "min_ms": 0.321899,
+          "p95_ms": 0.9500567999999995,
+          "rows_per_second": 64503.124370086676,
+          "samples_ms": [
+            0.402063,
+            0.463821,
+            0.474216,
+            0.788665,
+            0.635,
+            0.406004,
+            0.398529,
+            0.34549,
+            0.8103,
+            0.51164,
+            1.132905,
+            0.766987,
+            0.727866,
+            0.672076,
+            0.713651,
+            0.551709,
+            0.4961,
+            0.482468,
+            0.499315,
+            0.331894,
+            0.337547,
+            0.34251,
+            0.480709,
+            0.984996,
+            0.321899
+          ],
+          "speedup_vs_eager": 0.7074480951421085
+        }
+      },
+      "unoptimized": {
+        "backend": "torch",
+        "graph": {
+          "constants": {
+            "_0_bias_3": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256
+              ]
+            },
+            "_0_weight_t_1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128,
+                256
+              ]
+            },
+            "_2_bias_6": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                64
+              ]
+            },
+            "_2_weight_t_4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256,
+                64
+              ]
+            }
+          },
+          "inputs": {
+            "input_0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                32,
+                128
+              ]
+            }
+          },
+          "nodes": [
+            {
+              "attrs": {},
+              "inputs": [
+                "input_0",
+                "_0_weight_t_1"
+              ],
+              "name": "_0_matmul_2",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  256
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_0_matmul_2",
+                "_0_bias_3"
+              ],
+              "name": "_0",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  256
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "approximate": "tanh"
+              },
+              "inputs": [
+                "_0"
+              ],
+              "name": "_1",
+              "op": "gelu",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  256
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_1",
+                "_2_weight_t_4"
+              ],
+              "name": "_2_matmul_5",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  64
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_2_matmul_5",
+                "_2_bias_6"
+              ],
+              "name": "_2",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  64
+                ]
+              }
+            }
+          ],
+          "output_is_tuple": false,
+          "outputs": [
+            "_2"
+          ]
+        },
+        "kernel_configs": {},
+        "kernel_plan": {
+          "_0": "torch",
+          "_0_matmul_2": "torch",
+          "_1": "torch",
+          "_2": "torch",
+          "_2_matmul_5": "torch"
+        },
+        "memory_plan": {
+          "allocations": {
+            "_0": {
+              "first": 1,
+              "last": 2,
+              "size_bytes": 32768,
+              "slot": 1
+            },
+            "_0_matmul_2": {
+              "first": 0,
+              "last": 1,
+              "size_bytes": 32768,
+              "slot": 0
+            },
+            "_1": {
+              "first": 2,
+              "last": 3,
+              "size_bytes": 32768,
+              "slot": 0
+            },
+            "_2_matmul_5": {
+              "first": 3,
+              "last": 4,
+              "size_bytes": 8192,
+              "slot": 1
+            }
+          },
+          "naive_bytes": 106496,
+          "planned_bytes": 65536,
+          "slot_specs": {
+            "0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                8192
+              ]
+            },
+            "1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                8192
+              ]
+            }
+          }
+        },
+        "optimized_nodes": 5,
+        "original_nodes": 5,
+        "passes": []
+      },
+      "width": 128
+    },
+    {
+      "autotuning": null,
+      "batch": 32,
+      "compile_ms": {
+        "optimized": 88.244697,
+        "unoptimized": 32.71037
+      },
+      "correctness": {
+        "optimized": {
+          "atol": 0.0001,
+          "max_absolute_error": 0.0,
+          "passed": true,
+          "rtol": 0.0001
+        },
+        "unoptimized": {
+          "atol": 0.0001,
+          "max_absolute_error": 0.0,
+          "passed": true,
+          "rtol": 0.0001
+        }
+      },
+      "dtype": "torch.float32",
+      "hidden": 256,
+      "name": "residual_32_128_256",
+      "optimized": {
+        "backend": "torch",
+        "graph": {
+          "constants": {
+            "down_bias_6": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128
+              ]
+            },
+            "down_weight_t_4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256,
+                128
+              ]
+            },
+            "up_bias_3": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256
+              ]
+            },
+            "up_weight_t_1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128,
+                256
+              ]
+            }
+          },
+          "inputs": {
+            "input_0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                32,
+                128
+              ]
+            }
+          },
+          "nodes": [
+            {
+              "attrs": {
+                "approximate": "tanh"
+              },
+              "inputs": [
+                "input_0",
+                "up_weight_t_1",
+                "up_bias_3"
+              ],
+              "name": "activation",
+              "op": "fused_linear_gelu",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  256
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "activation",
+                "down_weight_t_4"
+              ],
+              "name": "down_matmul_5",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "down_matmul_5",
+                "down_bias_6"
+              ],
+              "name": "down",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "down",
+                "input_0"
+              ],
+              "name": "add",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  128
+                ]
+              }
+            }
+          ],
+          "output_is_tuple": false,
+          "outputs": [
+            "add"
+          ]
+        },
+        "kernel_configs": {},
+        "kernel_plan": {
+          "activation": "torch",
+          "add": "torch",
+          "down": "torch",
+          "down_matmul_5": "torch"
+        },
+        "memory_plan": {
+          "allocations": {
+            "activation": {
+              "first": 0,
+              "last": 1,
+              "size_bytes": 32768,
+              "slot": 0
+            },
+            "down": {
+              "first": 2,
+              "last": 3,
+              "size_bytes": 16384,
+              "slot": 0
+            },
+            "down_matmul_5": {
+              "first": 1,
+              "last": 2,
+              "size_bytes": 16384,
+              "slot": 1
+            }
+          },
+          "naive_bytes": 65536,
+          "planned_bytes": 49152,
+          "slot_specs": {
+            "0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                8192
+              ]
+            },
+            "1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                4096
+              ]
+            }
+          }
+        },
+        "optimized_nodes": 4,
+        "original_nodes": 6,
+        "passes": [
+          {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 6,
+            "nodes_before": 6
+          },
+          {
+            "name": "fold_constants",
+            "nodes_after": 6,
+            "nodes_before": 6
+          },
+          {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 6,
+            "nodes_before": 6
+          },
+          {
+            "name": "fuse_linear_gelu",
+            "nodes_after": 4,
+            "nodes_before": 6
+          },
+          {
+            "name": "schedule",
+            "nodes_after": 4,
+            "nodes_before": 4
+          }
+        ]
+      },
+      "output": 128,
+      "timings": {
+        "eager": {
+          "count": 25,
+          "max_ms": 1.048295,
+          "median_ms": 0.442369,
+          "min_ms": 0.251728,
+          "p95_ms": 0.9779501999999995,
+          "rows_per_second": 72337.79943892994,
+          "samples_ms": [
+            0.815048,
+            0.251728,
+            0.374034,
+            0.471618,
+            1.048295,
+            0.453877,
+            0.372748,
+            0.353428,
+            0.297718,
+            0.318069,
+            0.379405,
+            0.358205,
+            0.417703,
+            0.515655,
+            0.372397,
+            0.831875,
+            0.341174,
+            0.442369,
+            0.527977,
+            0.653427,
+            0.458961,
+            0.509562,
+            0.334465,
+            1.014469,
+            0.471839
+          ],
+          "speedup_vs_eager": 1.0
+        },
+        "optimized": {
+          "count": 25,
+          "max_ms": 1.684631,
+          "median_ms": 0.409425,
+          "min_ms": 0.236716,
+          "p95_ms": 1.171225599999999,
+          "rows_per_second": 78158.39286804665,
+          "samples_ms": [
+            0.383528,
+            0.250563,
+            0.236716,
+            0.409425,
+            0.327563,
+            1.253567,
+            0.84186,
+            0.39783,
+            0.372647,
+            0.648248,
+            0.481088,
+            0.698805,
+            0.459805,
+            0.339697,
+            0.816514,
+            0.439736,
+            0.379411,
+            0.408648,
+            0.386832,
+            1.684631,
+            0.71356,
+            0.382699,
+            0.306215,
+            0.550486,
+            0.455996
+          ],
+          "speedup_vs_eager": 1.080464065457654
+        },
+        "unoptimized": {
+          "count": 25,
+          "max_ms": 1.462671,
+          "median_ms": 0.567011,
+          "min_ms": 0.363888,
+          "p95_ms": 1.2386239999999997,
+          "rows_per_second": 56436.294886695316,
+          "samples_ms": [
+            0.567011,
+            0.367395,
+            1.256699,
+            0.485757,
+            0.372618,
+            0.622068,
+            0.752928,
+            0.55449,
+            0.412297,
+            0.609114,
+            0.530157,
+            0.639076,
+            0.55071,
+            0.548713,
+            0.43427,
+            1.166324,
+            0.389866,
+            1.00616,
+            0.623769,
+            0.783692,
+            0.534166,
+            0.777323,
+            0.363888,
+            0.936116,
+            1.462671
+          ],
+          "speedup_vs_eager": 0.7801771041478913
+        }
+      },
+      "unoptimized": {
+        "backend": "torch",
+        "graph": {
+          "constants": {
+            "down_bias_6": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128
+              ]
+            },
+            "down_weight_t_4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256,
+                128
+              ]
+            },
+            "up_bias_3": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256
+              ]
+            },
+            "up_weight_t_1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128,
+                256
+              ]
+            }
+          },
+          "inputs": {
+            "input_0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                32,
+                128
+              ]
+            }
+          },
+          "nodes": [
+            {
+              "attrs": {},
+              "inputs": [
+                "input_0",
+                "up_weight_t_1"
+              ],
+              "name": "up_matmul_2",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  256
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "up_matmul_2",
+                "up_bias_3"
+              ],
+              "name": "up",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  256
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "approximate": "tanh"
+              },
+              "inputs": [
+                "up"
+              ],
+              "name": "activation",
+              "op": "gelu",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  256
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "activation",
+                "down_weight_t_4"
+              ],
+              "name": "down_matmul_5",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "down_matmul_5",
+                "down_bias_6"
+              ],
+              "name": "down",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "down",
+                "input_0"
+              ],
+              "name": "add",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  32,
+                  128
+                ]
+              }
+            }
+          ],
+          "output_is_tuple": false,
+          "outputs": [
+            "add"
+          ]
+        },
+        "kernel_configs": {},
+        "kernel_plan": {
+          "activation": "torch",
+          "add": "torch",
+          "down": "torch",
+          "down_matmul_5": "torch",
+          "up": "torch",
+          "up_matmul_2": "torch"
+        },
+        "memory_plan": {
+          "allocations": {
+            "activation": {
+              "first": 2,
+              "last": 3,
+              "size_bytes": 32768,
+              "slot": 0
+            },
+            "down": {
+              "first": 4,
+              "last": 5,
+              "size_bytes": 16384,
+              "slot": 0
+            },
+            "down_matmul_5": {
+              "first": 3,
+              "last": 4,
+              "size_bytes": 16384,
+              "slot": 1
+            },
+            "up": {
+              "first": 1,
+              "last": 2,
+              "size_bytes": 32768,
+              "slot": 1
+            },
+            "up_matmul_2": {
+              "first": 0,
+              "last": 1,
+              "size_bytes": 32768,
+              "slot": 0
+            }
+          },
+          "naive_bytes": 131072,
+          "planned_bytes": 65536,
+          "slot_specs": {
+            "0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                8192
+              ]
+            },
+            "1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                8192
+              ]
+            }
+          }
+        },
+        "optimized_nodes": 6,
+        "original_nodes": 6,
+        "passes": []
+      },
+      "width": 128
+    },
+    {
+      "autotuning": null,
+      "batch": 64,
+      "compile_ms": {
+        "optimized": 107.331338,
+        "unoptimized": 40.827719
+      },
+      "correctness": {
+        "optimized": {
+          "atol": 0.0001,
+          "max_absolute_error": 5.960464477539063e-08,
+          "passed": true,
+          "rtol": 0.0001
+        },
+        "unoptimized": {
+          "atol": 0.0001,
+          "max_absolute_error": 5.960464477539063e-08,
+          "passed": true,
+          "rtol": 0.0001
+        }
+      },
+      "dtype": "torch.float32",
+      "hidden": 512,
+      "name": "mlp_64_256_512",
+      "optimized": {
+        "backend": "torch",
+        "graph": {
+          "constants": {
+            "_0_bias_3": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                512
+              ]
+            },
+            "_0_weight_t_1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256,
+                512
+              ]
+            },
+            "_2_bias_6": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128
+              ]
+            },
+            "_2_weight_t_4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                512,
+                128
+              ]
+            }
+          },
+          "inputs": {
+            "input_0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                64,
+                256
+              ]
+            }
+          },
+          "nodes": [
+            {
+              "attrs": {
+                "approximate": "tanh"
+              },
+              "inputs": [
+                "input_0",
+                "_0_weight_t_1",
+                "_0_bias_3"
+              ],
+              "name": "_1",
+              "op": "fused_linear_gelu",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  512
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_1",
+                "_2_weight_t_4"
+              ],
+              "name": "_2_matmul_5",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_2_matmul_5",
+                "_2_bias_6"
+              ],
+              "name": "_2",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  128
+                ]
+              }
+            }
+          ],
+          "output_is_tuple": false,
+          "outputs": [
+            "_2"
+          ]
+        },
+        "kernel_configs": {},
+        "kernel_plan": {
+          "_1": "torch",
+          "_2": "torch",
+          "_2_matmul_5": "torch"
+        },
+        "memory_plan": {
+          "allocations": {
+            "_1": {
+              "first": 0,
+              "last": 1,
+              "size_bytes": 131072,
+              "slot": 0
+            },
+            "_2_matmul_5": {
+              "first": 1,
+              "last": 2,
+              "size_bytes": 32768,
+              "slot": 1
+            }
+          },
+          "naive_bytes": 163840,
+          "planned_bytes": 163840,
+          "slot_specs": {
+            "0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                32768
+              ]
+            },
+            "1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                8192
+              ]
+            }
+          }
+        },
+        "optimized_nodes": 3,
+        "original_nodes": 5,
+        "passes": [
+          {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 5,
+            "nodes_before": 5
+          },
+          {
+            "name": "fold_constants",
+            "nodes_after": 5,
+            "nodes_before": 5
+          },
+          {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 5,
+            "nodes_before": 5
+          },
+          {
+            "name": "fuse_linear_gelu",
+            "nodes_after": 3,
+            "nodes_before": 5
+          },
+          {
+            "name": "schedule",
+            "nodes_after": 3,
+            "nodes_before": 3
+          }
+        ]
+      },
+      "output": 128,
+      "timings": {
+        "eager": {
+          "count": 25,
+          "max_ms": 54.30019,
+          "median_ms": 1.525621,
+          "min_ms": 0.923747,
+          "p95_ms": 12.993337599999979,
+          "rows_per_second": 41950.13047146048,
+          "samples_ms": [
+            1.860931,
+            4.570615,
+            1.845181,
+            1.098504,
+            6.606084,
+            3.01629,
+            1.462148,
+            1.135221,
+            1.123807,
+            1.972987,
+            1.168281,
+            1.005178,
+            1.026489,
+            1.320244,
+            1.046347,
+            3.144138,
+            1.525621,
+            14.590151,
+            54.30019,
+            0.923747,
+            1.008026,
+            3.748064,
+            1.623065,
+            1.359202,
+            2.212408
+          ],
+          "speedup_vs_eager": 1.0
+        },
+        "optimized": {
+          "count": 25,
+          "max_ms": 228.387693,
+          "median_ms": 1.762498,
+          "min_ms": 1.020985,
+          "p95_ms": 8.237822199999997,
+          "rows_per_second": 36312.09794280618,
+          "samples_ms": [
+            1.648798,
+            1.915753,
+            1.22039,
+            1.652161,
+            1.687491,
+            1.151361,
+            228.387693,
+            1.135542,
+            1.929399,
+            1.492384,
+            1.959749,
+            1.41257,
+            1.762498,
+            1.76902,
+            1.036153,
+            2.362176,
+            2.284522,
+            7.347763,
+            2.02508,
+            1.032248,
+            1.661448,
+            8.460337,
+            2.120043,
+            1.971443,
+            1.020985
+          ],
+          "speedup_vs_eager": 0.8656015496187797
+        },
+        "unoptimized": {
+          "count": 25,
+          "max_ms": 19.733954,
+          "median_ms": 1.792957,
+          "min_ms": 1.121349,
+          "p95_ms": 14.156901599999982,
+          "rows_per_second": 35695.22303100409,
+          "samples_ms": [
+            1.562698,
+            1.59017,
+            1.292773,
+            1.294945,
+            1.933381,
+            1.17352,
+            2.593674,
+            3.267798,
+            1.450379,
+            2.438475,
+            1.500357,
+            1.792957,
+            6.674513,
+            1.121349,
+            1.571461,
+            4.980192,
+            19.733954,
+            3.826026,
+            15.42282,
+            2.651234,
+            1.12843,
+            1.736104,
+            1.219907,
+            3.651021,
+            9.093228
+          ],
+          "speedup_vs_eager": 0.850896591496617
+        }
+      },
+      "unoptimized": {
+        "backend": "torch",
+        "graph": {
+          "constants": {
+            "_0_bias_3": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                512
+              ]
+            },
+            "_0_weight_t_1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256,
+                512
+              ]
+            },
+            "_2_bias_6": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                128
+              ]
+            },
+            "_2_weight_t_4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                512,
+                128
+              ]
+            }
+          },
+          "inputs": {
+            "input_0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                64,
+                256
+              ]
+            }
+          },
+          "nodes": [
+            {
+              "attrs": {},
+              "inputs": [
+                "input_0",
+                "_0_weight_t_1"
+              ],
+              "name": "_0_matmul_2",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  512
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_0_matmul_2",
+                "_0_bias_3"
+              ],
+              "name": "_0",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  512
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "approximate": "tanh"
+              },
+              "inputs": [
+                "_0"
+              ],
+              "name": "_1",
+              "op": "gelu",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  512
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_1",
+                "_2_weight_t_4"
+              ],
+              "name": "_2_matmul_5",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "_2_matmul_5",
+                "_2_bias_6"
+              ],
+              "name": "_2",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  128
+                ]
+              }
+            }
+          ],
+          "output_is_tuple": false,
+          "outputs": [
+            "_2"
+          ]
+        },
+        "kernel_configs": {},
+        "kernel_plan": {
+          "_0": "torch",
+          "_0_matmul_2": "torch",
+          "_1": "torch",
+          "_2": "torch",
+          "_2_matmul_5": "torch"
+        },
+        "memory_plan": {
+          "allocations": {
+            "_0": {
+              "first": 1,
+              "last": 2,
+              "size_bytes": 131072,
+              "slot": 1
+            },
+            "_0_matmul_2": {
+              "first": 0,
+              "last": 1,
+              "size_bytes": 131072,
+              "slot": 0
+            },
+            "_1": {
+              "first": 2,
+              "last": 3,
+              "size_bytes": 131072,
+              "slot": 0
+            },
+            "_2_matmul_5": {
+              "first": 3,
+              "last": 4,
+              "size_bytes": 32768,
+              "slot": 1
+            }
+          },
+          "naive_bytes": 425984,
+          "planned_bytes": 262144,
+          "slot_specs": {
+            "0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                32768
+              ]
+            },
+            "1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                32768
+              ]
+            }
+          }
+        },
+        "optimized_nodes": 5,
+        "original_nodes": 5,
+        "passes": []
+      },
+      "width": 256
+    },
+    {
+      "autotuning": null,
+      "batch": 64,
+      "compile_ms": {
+        "optimized": 332.672484,
+        "unoptimized": 169.233573
+      },
+      "correctness": {
+        "optimized": {
+          "atol": 0.0001,
+          "max_absolute_error": 2.384185791015625e-07,
+          "passed": true,
+          "rtol": 0.0001
+        },
+        "unoptimized": {
+          "atol": 0.0001,
+          "max_absolute_error": 2.384185791015625e-07,
+          "passed": true,
+          "rtol": 0.0001
+        }
+      },
+      "dtype": "torch.float32",
+      "hidden": 512,
+      "name": "residual_64_256_512",
+      "optimized": {
+        "backend": "torch",
+        "graph": {
+          "constants": {
+            "down_bias_6": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256
+              ]
+            },
+            "down_weight_t_4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                512,
+                256
+              ]
+            },
+            "up_bias_3": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                512
+              ]
+            },
+            "up_weight_t_1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256,
+                512
+              ]
+            }
+          },
+          "inputs": {
+            "input_0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                64,
+                256
+              ]
+            }
+          },
+          "nodes": [
+            {
+              "attrs": {
+                "approximate": "tanh"
+              },
+              "inputs": [
+                "input_0",
+                "up_weight_t_1",
+                "up_bias_3"
+              ],
+              "name": "activation",
+              "op": "fused_linear_gelu",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  512
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "activation",
+                "down_weight_t_4"
+              ],
+              "name": "down_matmul_5",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  256
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "down_matmul_5",
+                "down_bias_6"
+              ],
+              "name": "down",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  256
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "down",
+                "input_0"
+              ],
+              "name": "add",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  256
+                ]
+              }
+            }
+          ],
+          "output_is_tuple": false,
+          "outputs": [
+            "add"
+          ]
+        },
+        "kernel_configs": {},
+        "kernel_plan": {
+          "activation": "torch",
+          "add": "torch",
+          "down": "torch",
+          "down_matmul_5": "torch"
+        },
+        "memory_plan": {
+          "allocations": {
+            "activation": {
+              "first": 0,
+              "last": 1,
+              "size_bytes": 131072,
+              "slot": 0
+            },
+            "down": {
+              "first": 2,
+              "last": 3,
+              "size_bytes": 65536,
+              "slot": 0
+            },
+            "down_matmul_5": {
+              "first": 1,
+              "last": 2,
+              "size_bytes": 65536,
+              "slot": 1
+            }
+          },
+          "naive_bytes": 262144,
+          "planned_bytes": 196608,
+          "slot_specs": {
+            "0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                32768
+              ]
+            },
+            "1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                16384
+              ]
+            }
+          }
+        },
+        "optimized_nodes": 4,
+        "original_nodes": 6,
+        "passes": [
+          {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 6,
+            "nodes_before": 6
+          },
+          {
+            "name": "fold_constants",
+            "nodes_after": 6,
+            "nodes_before": 6
+          },
+          {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 6,
+            "nodes_before": 6
+          },
+          {
+            "name": "fuse_linear_gelu",
+            "nodes_after": 4,
+            "nodes_before": 6
+          },
+          {
+            "name": "schedule",
+            "nodes_after": 4,
+            "nodes_before": 4
+          }
+        ]
+      },
+      "output": 256,
+      "timings": {
+        "eager": {
+          "count": 25,
+          "max_ms": 33.459801,
+          "median_ms": 2.193535,
+          "min_ms": 1.134444,
+          "p95_ms": 8.662091399999989,
+          "rows_per_second": 29176.648651605745,
+          "samples_ms": [
+            1.145665,
+            4.077514,
+            4.063491,
+            1.215139,
+            1.337454,
+            1.277765,
+            1.134444,
+            9.427063,
+            1.135727,
+            2.163429,
+            3.968547,
+            2.619301,
+            3.345155,
+            1.807511,
+            2.193535,
+            4.397041,
+            4.286523,
+            1.245548,
+            1.89498,
+            3.805475,
+            2.319731,
+            5.602205,
+            1.50499,
+            33.459801,
+            1.621507
+          ],
+          "speedup_vs_eager": 1.0
+        },
+        "optimized": {
+          "count": 25,
+          "max_ms": 58.147656,
+          "median_ms": 1.695348,
+          "min_ms": 1.209986,
+          "p95_ms": 35.525207399999914,
+          "rows_per_second": 37750.361577681986,
+          "samples_ms": [
+            1.210912,
+            4.424116,
+            1.695348,
+            1.294777,
+            2.691565,
+            1.770667,
+            1.322634,
+            41.915944,
+            1.282287,
+            7.103031,
+            1.277285,
+            9.453141,
+            1.217817,
+            1.209986,
+            9.962261,
+            2.211197,
+            5.767198,
+            1.312017,
+            58.147656,
+            2.456226,
+            1.279683,
+            2.152296,
+            1.53504,
+            1.561427,
+            1.267826
+          ],
+          "speedup_vs_eager": 1.2938553028640725
+        },
+        "unoptimized": {
+          "count": 25,
+          "max_ms": 76.94208,
+          "median_ms": 1.670966,
+          "min_ms": 1.13854,
+          "p95_ms": 8.6411034,
+          "rows_per_second": 38301.19822904835,
+          "samples_ms": [
+            2.058896,
+            1.305742,
+            1.393784,
+            1.329831,
+            1.13854,
+            2.175885,
+            1.492343,
+            1.353915,
+            2.276229,
+            1.567219,
+            8.65199,
+            2.504824,
+            1.492512,
+            1.670966,
+            2.02998,
+            3.187301,
+            8.597557,
+            1.423976,
+            2.56877,
+            76.94208,
+            1.57759,
+            2.010118,
+            2.038017,
+            1.564014,
+            1.271362
+          ],
+          "speedup_vs_eager": 1.3127346696461806
+        }
+      },
+      "unoptimized": {
+        "backend": "torch",
+        "graph": {
+          "constants": {
+            "down_bias_6": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256
+              ]
+            },
+            "down_weight_t_4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                512,
+                256
+              ]
+            },
+            "up_bias_3": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                512
+              ]
+            },
+            "up_weight_t_1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                256,
+                512
+              ]
+            }
+          },
+          "inputs": {
+            "input_0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                64,
+                256
+              ]
+            }
+          },
+          "nodes": [
+            {
+              "attrs": {},
+              "inputs": [
+                "input_0",
+                "up_weight_t_1"
+              ],
+              "name": "up_matmul_2",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  512
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "up_matmul_2",
+                "up_bias_3"
+              ],
+              "name": "up",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  512
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "approximate": "tanh"
+              },
+              "inputs": [
+                "up"
+              ],
+              "name": "activation",
+              "op": "gelu",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  512
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "activation",
+                "down_weight_t_4"
+              ],
+              "name": "down_matmul_5",
+              "op": "matmul",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  256
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "down_matmul_5",
+                "down_bias_6"
+              ],
+              "name": "down",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  256
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "down",
+                "input_0"
+              ],
+              "name": "add",
+              "op": "add",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  256
+                ]
+              }
+            }
+          ],
+          "output_is_tuple": false,
+          "outputs": [
+            "add"
+          ]
+        },
+        "kernel_configs": {},
+        "kernel_plan": {
+          "activation": "torch",
+          "add": "torch",
+          "down": "torch",
+          "down_matmul_5": "torch",
+          "up": "torch",
+          "up_matmul_2": "torch"
+        },
+        "memory_plan": {
+          "allocations": {
+            "activation": {
+              "first": 2,
+              "last": 3,
+              "size_bytes": 131072,
+              "slot": 0
+            },
+            "down": {
+              "first": 4,
+              "last": 5,
+              "size_bytes": 65536,
+              "slot": 0
+            },
+            "down_matmul_5": {
+              "first": 3,
+              "last": 4,
+              "size_bytes": 65536,
+              "slot": 1
+            },
+            "up": {
+              "first": 1,
+              "last": 2,
+              "size_bytes": 131072,
+              "slot": 1
+            },
+            "up_matmul_2": {
+              "first": 0,
+              "last": 1,
+              "size_bytes": 131072,
+              "slot": 0
+            }
+          },
+          "naive_bytes": 524288,
+          "planned_bytes": 262144,
+          "slot_specs": {
+            "0": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                32768
+              ]
+            },
+            "1": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                32768
+              ]
+            }
+          }
+        },
+        "optimized_nodes": 6,
+        "original_nodes": 6,
+        "passes": []
+      },
+      "width": 256
+    }
+  ]
+}
