@@ -1,0 +1,37 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "forgeml"
+version = "0.1.0"
+description = "ForgeML: a minimal deep-learning compiler with an IR, optimization passes, and memory planning"
+license = { text = "MIT" }
+requires-python = ">=3.11"
+dependencies = [
+    "torch==2.14.0",
+    "numpy==2.5.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest==9.1.1",
+    "ruff==0.16.7",
+    "build==1.6.1",
+]
+onnx = [
+    "onnx==1.22.0",
+]
+gpu = [
+    "triton==3.8.0; sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
