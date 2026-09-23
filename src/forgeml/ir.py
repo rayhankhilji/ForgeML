@@ -184,7 +184,16 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
         raise
     except Exception as e:
         raise GraphError(f"op {op!r} failed spec inference: {e}") from e
-    device = next((s.device for s in input_specs if len(s.shape) > 0), input_specs[0].device)
+    if all(len(s.shape) == 0 for s in input_specs) and op in ("add", "mul"):
+        device = next(
+            (s.device for s in input_specs if torch.device(s.device).type != "cpu"),
+            input_specs[0].device,
+        )
+    else:
+        device = next(
+            (s.device for s in input_specs if len(s.shape) > 0),
+            input_specs[0].device,
+        )
     return TensorSpec(tuple(out.shape), out.dtype, device)
 
 

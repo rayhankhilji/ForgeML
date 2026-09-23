@@ -16,7 +16,8 @@ have NOT been validated in this environment.
 ## Commands
 
 ```bash
-.venv/bin/python -m pytest tests/ -q
+.venv/bin/python -m pytest tests/ -q          # GPU tests auto-skip without CUDA+triton
+.venv/bin/python -m pytest tests/ -q -m gpu   # GPU-only run (requires CUDA GPU + triton)
 .venv/bin/ruff check src/forgeml tests examples/compile_mlp.py
 .venv/bin/ruff format --check src/forgeml tests examples/compile_mlp.py
 .venv/bin/python examples/compile_mlp.py
@@ -32,8 +33,12 @@ have NOT been validated in this environment.
   Dropout/BatchNorm.
 - Shapes are static: every dimension must be a positive integer; zero/dynamic
   dims fail in `TensorSpec`/`Graph.validate()`.
-- Backend is `torch` only this milestone; other backend names must fail
-  clearly. GPU works naturally when inputs and constants share the device.
+- Backends: `torch` (default), `triton`, and `auto`. `triton`/`auto` map
+  eligible CUDA `matmul`/`fused_linear_gelu` nodes to the Triton kernel in
+  `src/forgeml/_triton.py` (mixed execution with torch fallback for the rest);
+  `triton` requires CUDA + the triton package and errors clearly otherwise.
+  No silent fallback if a selected Triton launch fails. The Triton path is
+  untested on this Intel host (all GPU tests skip); do not claim it validated.
 - Do not claim CPU hardware fusion for `fused_linear_gelu` (it is an op-level
   fusion), nor that `MemoryPlan.planned_bytes` is real allocator peak memory.
 - No arbitrary `exec`/`eval` anywhere; ONNX attributes are data, not code.

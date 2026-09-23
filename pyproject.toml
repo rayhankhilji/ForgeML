@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools==80.9.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -12,6 +12,9 @@ dependencies = [
     "torch==2.14.0",
     "numpy==2.5.3",
 ]
+
+[project.scripts]
+forgeml = 'forgeml.benchmarks:main'
 
 [project.optional-dependencies]
 dev = [
@@ -35,3 +38,6 @@ target-version = "py311"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "gpu: tests that require a CUDA GPU with triton installed",
+]
