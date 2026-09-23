@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "forgeml"
 version = "0.1.0"
+readme = "README.md"
 description = "ForgeML: a minimal deep-learning compiler with an IR, optimization passes, and memory planning"
 license = { text = "MIT" }
 requires-python = ">=3.11"
@@ -40,4 +41,5 @@ target-version = "py311"
 testpaths = ["tests"]
 markers = [
     "gpu: tests that require a CUDA GPU with triton installed",
+    "distributed: tests that spawn torch.distributed gloo process groups",
 ]
