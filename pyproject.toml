@@ -7,7 +7,7 @@ name = "forgeml"
 version = "0.1.0"
 readme = "README.md"
 description = "ForgeML: a minimal deep-learning compiler with an IR, optimization passes, and memory planning"
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.11"
 dependencies = [
     "torch==2.14.0",

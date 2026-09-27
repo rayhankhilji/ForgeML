@@ -330,7 +330,7 @@ Each decoder layer uses one TP reduction after attention and one after its feed-
 
 With pipeline degree $P$, contiguous layer ranges are assigned to stages. Rank mapping is
 
-$$\mathrm{tpRank}=\mathrm{rank}\bmod T,\qquad\mathrm{ppRank}=\lfloor\mathrm{rank}/T\rfloor,\qquad\mathrm{worldSize}=TP.$$
+$$\mathrm{tpRank}=\mathrm{rank}\bmod T,\qquad\mathrm{ppRank}=\lfloor\mathrm{rank}/T\rfloor,\qquad\mathrm{worldSize}=T\times P.$$
 
 Layer count must divide by $P$; hidden/head and feed-forward partition dimensions must divide by $T$. CPU collectives use Gloo; CUDA collectives use NCCL.
 
