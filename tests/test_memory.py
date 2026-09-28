@@ -45,6 +45,20 @@ def test_view_like_values_extend_source_lifetime_without_new_slot():
     assert plan.planned_bytes == 2 * 8 * 4
 
 
+def test_transpose_view_extends_source_lifetime_without_new_slot():
+    b = GraphBuilder({"x": spec(2, 4), "z": spec(4, 2)})
+    b.add("a", "relu", ("x",))
+    b.add("t", "transpose", ("a",), dim0=0, dim1=1)
+    b.add("c", "relu", ("z",))
+    b.add("y", "add", ("t", "c"))
+    g = b.finish(("y",))
+    plan = plan_memory(g)
+    assert plan.aliases == {"t": "a"}
+    assert set(plan.allocations) == {"a", "c"}
+    assert plan.allocations["a"].last == 3
+    assert plan.allocations["a"].slot != plan.allocations["c"].slot
+
+
 def test_naive_and_planned_bytes():
     b = GraphBuilder({"x": spec(8), "z": spec(8)})
     b.add("a", "relu", ("x",))

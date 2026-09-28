@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 from forgeml.ir import Graph, TensorSpec
 
-VIEW_LIKE_OPS = {"reshape"}
+VIEW_LIKE_OPS = {"reshape", "transpose"}
 
 
 @dataclass(frozen=True)

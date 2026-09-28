@@ -175,7 +175,7 @@ For each node, spec inference runs the whitelisted operation on meta tensors and
 | Conv2d | NCHW input, OIHW weight, optional bias; static stride/padding/dilation/groups; zero padding only |
 | Embedding | Int64 indices and rank-2 `[vocab, dim]` table; training-only module options rejected |
 | Reshape / view | Static dimensions; one inferable `-1`; planned as a borrowed view |
-| Transpose / `t()` | Dimension swap; `t()` restricted to rank 2 |
+| Transpose / `t()` | Dimension swap; `t()` restricted to rank 2; internal results are planned as borrowed views |
 | Softmax | Explicit static axis; dtype override rejected |
 | Static value construction | Literal `torch.arange`, tensor `shape`/`ndim`/`device`/`dtype`, and static integer arithmetic used to resolve compile-time layout |
 | Outputs | One tensor or a flat tensor tuple |
@@ -266,7 +266,7 @@ A materialized intermediate $v$ has a closed live interval
 
 $$I_v=[\operatorname{produce}(v),\operatorname{lastUse}(v)].$$
 
-`reshape` nodes are planned as borrowed views rather than fresh physical buffers. If a producer is consumed by a view, its physical last use is recursively extended to the view's last materialized consumer; otherwise a later node could overwrite storage while the view is still alive. Transposes remain materialized because attention and GEMM kernels often benefit from contiguous operands.
+`reshape` and `transpose` nodes are planned as borrowed views rather than fresh physical buffers. If a producer is consumed by a view, its physical last use is recursively extended to the view's last materialized consumer; otherwise a later node could overwrite storage while the view is still alive. This removes layout-copy intermediates from attention-style reshape/transpose chains while retaining a conservative slot interval for the underlying producer. A view changes operand strides, so it reduces an intermediate copy but does not guarantee that a downstream CPU/GPU kernel becomes faster.
 
 A slot can be reassigned only when
 

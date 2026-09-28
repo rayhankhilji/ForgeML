@@ -37,7 +37,7 @@ def validate_memory_plan(explanation: dict) -> None:
     if naive != plan["naive_bytes"] or planned != plan["planned_bytes"]:
         raise ValueError("memory totals do not agree with the recorded IR and slots")
     aliases = plan.get("aliases", {})
-    view_ops = {"reshape"}
+    view_ops = {"reshape", "transpose"}
     index = {node["name"]: i for i, node in enumerate(graph["nodes"])}
     by_name = {node["name"]: node for node in graph["nodes"]}
     consumers: dict[str, list[str]] = {}

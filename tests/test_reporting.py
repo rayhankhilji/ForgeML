@@ -20,6 +20,36 @@ def test_chart_is_valid_svg_with_escaped_labels():
     assert "2.000" in svg
 
 
+def test_transpose_alias_reconstruction():
+    base = {"shape": [2, 4], "dtype": "float32", "device": "cpu"}
+    transposed = {"shape": [4, 2], "dtype": "float32", "device": "cpu"}
+    slot = {"shape": [8], "dtype": "float32", "device": "cpu"}
+    validate_memory_plan(
+        {
+            "graph": {
+                "nodes": [
+                    {"name": "a", "op": "relu", "inputs": ["x"], "spec": base},
+                    {
+                        "name": "t",
+                        "op": "transpose",
+                        "inputs": ["a"],
+                        "spec": transposed,
+                    },
+                    {"name": "out", "op": "relu", "inputs": ["t"], "spec": transposed},
+                ],
+                "outputs": ["out"],
+            },
+            "memory_plan": {
+                "aliases": {"t": "a"},
+                "naive_bytes": 64,
+                "planned_bytes": 32,
+                "slot_specs": {"0": slot},
+                "allocations": {"a": {"slot": 0, "size_bytes": 32, "first": 0, "last": 2}},
+            },
+        }
+    )
+
+
 def test_memory_reconstruction_requires_identical_accounting_scope():
     spec = {"shape": [4], "dtype": "float32", "device": "cpu"}
     explanation = {

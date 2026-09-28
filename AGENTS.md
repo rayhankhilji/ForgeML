@@ -54,8 +54,8 @@ these exact modern dependency pins, compiler tests and package build at commit
   untested on this Intel host (all GPU tests skip); do not claim it validated.
 - Do not claim CPU hardware fusion for `fused_linear_gelu` (it is an op-level
   fusion), nor that `MemoryPlan.planned_bytes` is real allocator peak memory.
-  `reshape` intermediates are view/borrowed values; their producers' physical
-  lifetimes must cover all view consumers before a slot may be reused.
+  `reshape`/`transpose` intermediates are view/borrowed values; their producers'
+  physical lifetimes must cover all view consumers before a slot may be reused.
 - Graph analysis in `explain()` is a static cost model, not hardware counters:
   report FLOP/logical-byte/arithmetic-intensity/critical-path bounds as modeled
   values and preserve `optimization_delta` semantics.

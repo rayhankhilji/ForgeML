@@ -122,6 +122,25 @@ def test_view_like_node_borrows_source_until_last_use():
     torch.testing.assert_close(c(x, z), torch.relu(x).reshape(2, 4) + torch.relu(z))
 
 
+def test_transpose_borrows_source_until_last_use():
+    from forgeml.ir import GraphBuilder, TensorSpec
+
+    def spec(*shape):
+        return TensorSpec(tuple(shape), torch.float32, "cpu")
+
+    b = GraphBuilder({"x": spec(2, 4), "z": spec(4, 2)})
+    b.add("a", "relu", ("x",))
+    b.add("t", "transpose", ("a",), dim0=0, dim1=1)
+    b.add("c", "relu", ("z",))
+    b.add("y", "add", ("t", "c"))
+    c = compile(b.finish(("y",)), optimize=False)
+    assert c.memory_plan.aliases == {"t": "a"}
+    assert "t" not in c.memory_plan.allocations
+    x = torch.randn(2, 4)
+    z = torch.randn(4, 2)
+    torch.testing.assert_close(c(x, z), torch.relu(x).t() + torch.relu(z))
+
+
 def test_output_alias_not_clobbered_by_slot_reuse():
     from forgeml.ir import GraphBuilder, TensorSpec
 
