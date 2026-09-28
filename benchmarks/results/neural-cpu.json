@@ -1,9 +1,9 @@
 {
   "environment": {
-    "captured_at_utc": "2026-09-28T07:58:15.063591+00:00",
+    "captured_at_utc": "2026-09-28T11:18:23.369062+00:00",
     "cuda_runtime": null,
     "device": "cpu",
-    "git_commit": "05995c37ed5f8cd9dc927137d23ae7943003f5c4",
+    "git_commit": "92f3dfddd63e1d5d80b32d7d1f1d87397f9e6cf7",
     "git_dirty": false,
     "machine": "x86_64",
     "percentile_method": "linear_interpolation_at_(n-1)*q",
@@ -44,8 +44,8 @@
     {
       "autotuning": null,
       "compile_ms": {
-        "optimized": 296.014439,
-        "unoptimized": 570.506386
+        "optimized": 1199.126024,
+        "unoptimized": 1712.07914
       },
       "correctness": {
         "optimized": {
@@ -65,13 +65,25 @@
       "name": "transformer_block_4x24x128",
       "optimized": {
         "analysis": {
-          "arithmetic_intensity": 8.517297162767546,
+          "arithmetic_intensity": 14.53802039082413,
           "constant_bytes": 529920,
-          "critical_path_ops": 17,
+          "critical_path_ops": 18,
           "dominant_nodes": [
             {
+              "arithmetic_intensity": 24.0,
+              "depth": 3,
+              "flops": 9474048,
+              "logical_bytes": 394752,
+              "name": "q_shared_3",
+              "op": "linear",
+              "output_shape": [
+                96,
+                384
+              ]
+            },
+            {
               "arithmetic_intensity": 23.296703296703296,
-              "depth": 14,
+              "depth": 15,
               "flops": 6512640,
               "logical_bytes": 279552,
               "name": "gelu",
@@ -83,7 +95,7 @@
             },
             {
               "arithmetic_intensity": 22.590825688073394,
-              "depth": 15,
+              "depth": 16,
               "flops": 6303744,
               "logical_bytes": 279040,
               "name": "down",
@@ -95,31 +107,7 @@
             },
             {
               "arithmetic_intensity": 19.214953271028037,
-              "depth": 3,
-              "flops": 3158016,
-              "logical_bytes": 164352,
-              "name": "v",
-              "op": "linear",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 19.214953271028037,
-              "depth": 3,
-              "flops": 3158016,
-              "logical_bytes": 164352,
-              "name": "q",
-              "op": "linear",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 19.214953271028037,
-              "depth": 9,
+              "depth": 10,
               "flops": 3158016,
               "logical_bytes": 164352,
               "name": "o",
@@ -128,18 +116,33 @@
                 96,
                 128
               ]
+            },
+            {
+              "arithmetic_intensity": 3.369140625,
+              "depth": 7,
+              "flops": 662400,
+              "logical_bytes": 196608,
+              "name": "scaled_dot_product_attention",
+              "op": "sdpa",
+              "output_shape": [
+                4,
+                8,
+                24,
+                16
+              ]
             }
           ],
           "flops": 26282880,
           "input_bytes": 49152,
-          "logical_bytes": 3085824,
+          "logical_bytes": 1807872,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
-          "nodes": 23,
+          "nodes": 24,
           "op_counts": {
             "add": 2,
             "fused_linear_gelu": 1,
             "layer_norm": 2,
-            "linear": 5,
+            "linear": 3,
+            "narrow": 3,
             "reshape": 8,
             "sdpa": 1,
             "transpose": 4
@@ -163,7 +166,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 2,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape",
               "op": "reshape",
               "output_shape": [
@@ -172,12 +175,24 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.214953271028037,
+              "arithmetic_intensity": 24.0,
               "depth": 3,
-              "flops": 3158016,
-              "logical_bytes": 164352,
-              "name": "q",
+              "flops": 9474048,
+              "logical_bytes": 394752,
+              "name": "q_shared_3",
               "op": "linear",
+              "output_shape": [
+                96,
+                384
+              ]
+            },
+            {
+              "arithmetic_intensity": 0.0,
+              "depth": 4,
+              "flops": 0,
+              "logical_bytes": 0,
+              "name": "q",
+              "op": "narrow",
               "output_shape": [
                 96,
                 128
@@ -187,7 +202,31 @@
               "arithmetic_intensity": 0.0,
               "depth": 4,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
+              "name": "k",
+              "op": "narrow",
+              "output_shape": [
+                96,
+                128
+              ]
+            },
+            {
+              "arithmetic_intensity": 0.0,
+              "depth": 4,
+              "flops": 0,
+              "logical_bytes": 0,
+              "name": "v",
+              "op": "narrow",
+              "output_shape": [
+                96,
+                128
+              ]
+            },
+            {
+              "arithmetic_intensity": 0.0,
+              "depth": 5,
+              "flops": 0,
+              "logical_bytes": 0,
               "name": "view",
               "op": "reshape",
               "output_shape": [
@@ -199,9 +238,9 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 6,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose",
               "op": "transpose",
               "output_shape": [
@@ -212,22 +251,10 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.214953271028037,
-              "depth": 3,
-              "flops": 3158016,
-              "logical_bytes": 164352,
-              "name": "k",
-              "op": "linear",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
               "arithmetic_intensity": 0.0,
-              "depth": 4,
+              "depth": 5,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "view_1",
               "op": "reshape",
               "output_shape": [
@@ -239,9 +266,9 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 6,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose_1",
               "op": "transpose",
               "output_shape": [
@@ -252,22 +279,10 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.214953271028037,
-              "depth": 3,
-              "flops": 3158016,
-              "logical_bytes": 164352,
-              "name": "v",
-              "op": "linear",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
               "arithmetic_intensity": 0.0,
-              "depth": 4,
+              "depth": 5,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "view_2",
               "op": "reshape",
               "output_shape": [
@@ -279,9 +294,9 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 6,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose_2",
               "op": "transpose",
               "output_shape": [
@@ -293,7 +308,7 @@
             },
             {
               "arithmetic_intensity": 3.369140625,
-              "depth": 6,
+              "depth": 7,
               "flops": 662400,
               "logical_bytes": 196608,
               "name": "scaled_dot_product_attention",
@@ -307,9 +322,9 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 7,
+              "depth": 8,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose_3",
               "op": "transpose",
               "output_shape": [
@@ -321,9 +336,9 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 8,
+              "depth": 9,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_1",
               "op": "reshape",
               "output_shape": [
@@ -333,7 +348,7 @@
             },
             {
               "arithmetic_intensity": 19.214953271028037,
-              "depth": 9,
+              "depth": 10,
               "flops": 3158016,
               "logical_bytes": 164352,
               "name": "o",
@@ -345,9 +360,9 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 10,
+              "depth": 11,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_2",
               "op": "reshape",
               "output_shape": [
@@ -358,7 +373,7 @@
             },
             {
               "arithmetic_intensity": 0.08333333333333333,
-              "depth": 11,
+              "depth": 12,
               "flops": 12288,
               "logical_bytes": 147456,
               "name": "add",
@@ -371,7 +386,7 @@
             },
             {
               "arithmetic_intensity": 0.7422680412371134,
-              "depth": 12,
+              "depth": 13,
               "flops": 73728,
               "logical_bytes": 99328,
               "name": "ln2",
@@ -384,9 +399,9 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 13,
+              "depth": 14,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_3",
               "op": "reshape",
               "output_shape": [
@@ -396,7 +411,7 @@
             },
             {
               "arithmetic_intensity": 23.296703296703296,
-              "depth": 14,
+              "depth": 15,
               "flops": 6512640,
               "logical_bytes": 279552,
               "name": "gelu",
@@ -408,7 +423,7 @@
             },
             {
               "arithmetic_intensity": 22.590825688073394,
-              "depth": 15,
+              "depth": 16,
               "flops": 6303744,
               "logical_bytes": 279040,
               "name": "down",
@@ -420,9 +435,9 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 16,
+              "depth": 17,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_4",
               "op": "reshape",
               "output_shape": [
@@ -433,7 +448,7 @@
             },
             {
               "arithmetic_intensity": 0.08333333333333333,
-              "depth": 17,
+              "depth": 18,
               "flops": 12288,
               "logical_bytes": 147456,
               "name": "add_1",
@@ -461,21 +476,6 @@
               "dtype": "float32",
               "shape": [
                 256,
-                128
-              ]
-            },
-            "k_bias_6": {
-              "device": "cpu",
-              "dtype": "float32",
-              "shape": [
-                128
-              ]
-            },
-            "k_weight_t_5": {
-              "device": "cpu",
-              "dtype": "float32",
-              "shape": [
-                128,
                 128
               ]
             },
@@ -522,19 +522,19 @@
                 128
               ]
             },
-            "q_bias_4": {
+            "q_shared_bias_2": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
-                128
+                384
               ]
             },
-            "q_weight_t_3": {
+            "q_shared_weight_1": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128,
-                128
+                384
               ]
             },
             "up_bias_14": {
@@ -550,21 +550,6 @@
               "shape": [
                 128,
                 256
-              ]
-            },
-            "v_bias_8": {
-              "device": "cpu",
-              "dtype": "float32",
-              "shape": [
-                128
-              ]
-            },
-            "v_weight_t_7": {
-              "device": "cpu",
-              "dtype": "float32",
-              "shape": [
-                128,
-                128
               ]
             }
           },
@@ -629,11 +614,71 @@
               "attrs": {},
               "inputs": [
                 "reshape",
-                "q_weight_t_3",
-                "q_bias_4"
+                "q_shared_weight_1",
+                "q_shared_bias_2"
+              ],
+              "name": "q_shared_3",
+              "op": "linear",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  96,
+                  384
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "dim": 1,
+                "length": 128,
+                "start": 0
+              },
+              "inputs": [
+                "q_shared_3"
               ],
               "name": "q",
-              "op": "linear",
+              "op": "narrow",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  96,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "dim": 1,
+                "length": 128,
+                "start": 128
+              },
+              "inputs": [
+                "q_shared_3"
+              ],
+              "name": "k",
+              "op": "narrow",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  96,
+                  128
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "dim": 1,
+                "length": 128,
+                "start": 256
+              },
+              "inputs": [
+                "q_shared_3"
+              ],
+              "name": "v",
+              "op": "narrow",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -690,24 +735,6 @@
               }
             },
             {
-              "attrs": {},
-              "inputs": [
-                "reshape",
-                "k_weight_t_5",
-                "k_bias_6"
-              ],
-              "name": "k",
-              "op": "linear",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  128
-                ]
-              }
-            },
-            {
               "attrs": {
                 "shape": [
                   4,
@@ -750,24 +777,6 @@
                   8,
                   24,
                   16
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "reshape",
-                "v_weight_t_7",
-                "v_bias_8"
-              ],
-              "name": "v",
-              "op": "linear",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  128
                 ]
               }
             },
@@ -1082,6 +1091,7 @@
           "ln2": "torch",
           "o": "torch",
           "q": "torch",
+          "q_shared_3": "torch",
           "reshape": "torch",
           "reshape_1": "torch",
           "reshape_2": "torch",
@@ -1099,6 +1109,8 @@
         },
         "memory_plan": {
           "aliases": {
+            "k": "q_shared_3",
+            "q": "q_shared_3",
             "reshape": "ln1",
             "reshape_1": "transpose_3",
             "reshape_2": "o",
@@ -1108,80 +1120,45 @@
             "transpose_1": "view_1",
             "transpose_2": "view_2",
             "transpose_3": "scaled_dot_product_attention",
+            "v": "q_shared_3",
             "view": "q",
             "view_1": "k",
             "view_2": "v"
           },
           "allocations": {
             "add": {
-              "first": 16,
-              "last": 22,
+              "first": 17,
+              "last": 23,
               "size_bytes": 49152,
-              "slot": 0
+              "slot": 1
             },
             "down": {
-              "first": 20,
-              "last": 22,
-              "size_bytes": 49152,
-              "slot": 1
-            },
-            "gelu": {
-              "first": 19,
-              "last": 20,
-              "size_bytes": 98304,
-              "slot": 4
-            },
-            "k": {
-              "first": 5,
-              "last": 11,
-              "size_bytes": 49152,
-              "slot": 2
-            },
-            "ln1": {
-              "first": 0,
-              "last": 8,
+              "first": 21,
+              "last": 23,
               "size_bytes": 49152,
               "slot": 0
-            },
-            "ln2": {
-              "first": 17,
-              "last": 19,
-              "size_bytes": 49152,
-              "slot": 1
             },
             "o": {
-              "first": 14,
-              "last": 16,
-              "size_bytes": 49152,
-              "slot": 1
-            },
-            "q": {
-              "first": 2,
-              "last": 11,
-              "size_bytes": 49152,
-              "slot": 1
-            },
-            "scaled_dot_product_attention": {
-              "first": 11,
-              "last": 14,
+              "first": 15,
+              "last": 17,
               "size_bytes": 49152,
               "slot": 0
             },
-            "v": {
-              "first": 8,
-              "last": 11,
-              "size_bytes": 49152,
-              "slot": 3
+            "q_shared_3": {
+              "first": 2,
+              "last": 12,
+              "size_bytes": 147456,
+              "slot": 0
             }
           },
-          "naive_bytes": 1130496,
-          "planned_bytes": 294912,
+          "naive_bytes": 1277952,
+          "planned_bytes": 196608,
           "slot_specs": {
             "0": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
-                12288
+                36864
               ]
             },
             "1": {
@@ -1190,40 +1167,19 @@
               "shape": [
                 12288
               ]
-            },
-            "2": {
-              "device": "cpu",
-              "dtype": "float32",
-              "shape": [
-                12288
-              ]
-            },
-            "3": {
-              "device": "cpu",
-              "dtype": "float32",
-              "shape": [
-                12288
-              ]
-            },
-            "4": {
-              "device": "cpu",
-              "dtype": "float32",
-              "shape": [
-                24576
-              ]
             }
           }
         },
         "optimization_delta": {
-          "critical_path_ops": 1,
+          "critical_path_ops": 0,
           "flops": 0,
-          "logical_bytes": 196608,
-          "nodes": 1,
-          "planned_bytes": 835584
+          "logical_bytes": 294912,
+          "nodes": 0,
+          "planned_bytes": 1081344
         },
-        "optimized_nodes": 23,
+        "optimized_nodes": 24,
         "original_analysis": {
-          "arithmetic_intensity": 8.007136172204024,
+          "arithmetic_intensity": 12.4990869247626,
           "constant_bytes": 529920,
           "critical_path_ops": 18,
           "dominant_nodes": [
@@ -1290,7 +1246,7 @@
           ],
           "flops": 26282880,
           "input_bytes": 49152,
-          "logical_bytes": 3282432,
+          "logical_bytes": 2102784,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
           "nodes": 24,
           "op_counts": {
@@ -1321,7 +1277,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 2,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape",
               "op": "reshape",
               "output_shape": [
@@ -1345,7 +1301,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 4,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "view",
               "op": "reshape",
               "output_shape": [
@@ -1359,7 +1315,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose",
               "op": "transpose",
               "output_shape": [
@@ -1385,7 +1341,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 4,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "view_1",
               "op": "reshape",
               "output_shape": [
@@ -1399,7 +1355,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose_1",
               "op": "transpose",
               "output_shape": [
@@ -1425,7 +1381,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 4,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "view_2",
               "op": "reshape",
               "output_shape": [
@@ -1439,7 +1395,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose_2",
               "op": "transpose",
               "output_shape": [
@@ -1467,7 +1423,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 7,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose_3",
               "op": "transpose",
               "output_shape": [
@@ -1481,7 +1437,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 8,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_1",
               "op": "reshape",
               "output_shape": [
@@ -1505,7 +1461,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 10,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_2",
               "op": "reshape",
               "output_shape": [
@@ -1544,7 +1500,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 13,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_3",
               "op": "reshape",
               "output_shape": [
@@ -1592,7 +1548,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 17,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_4",
               "op": "reshape",
               "output_shape": [
@@ -1654,127 +1610,132 @@
             "nodes_before": 24
           },
           {
-            "name": "eliminate_dead_nodes",
-            "nodes_after": 23,
+            "name": "fuse_shared_projections",
+            "nodes_after": 24,
             "nodes_before": 23
           },
           {
+            "name": "eliminate_dead_nodes",
+            "nodes_after": 24,
+            "nodes_before": 24
+          },
+          {
             "name": "schedule",
-            "nodes_after": 23,
-            "nodes_before": 23
+            "nodes_after": 24,
+            "nodes_before": 24
           }
         ]
       },
       "timings": {
         "eager": {
           "count": 25,
-          "max_ms": 1.707394,
-          "median_ms": 1.013806,
-          "min_ms": 0.950331,
-          "p95_ms": 1.5032547999999997,
+          "max_ms": 7.099819,
+          "median_ms": 2.300255,
+          "min_ms": 1.60405,
+          "p95_ms": 6.441534599999995,
           "samples_ms": [
-            1.037668,
-            1.22378,
-            1.53454,
-            1.029271,
-            1.15795,
-            1.011303,
-            1.001538,
-            0.987267,
-            0.961826,
-            0.950331,
-            0.964885,
-            1.310969,
-            1.004254,
-            1.271053,
-            1.707394,
-            1.012017,
-            1.036876,
-            0.986139,
-            1.131088,
-            1.013806,
-            0.99611,
-            0.954052,
-            1.000894,
-            1.232588,
-            1.378114
+            2.060711,
+            4.607263,
+            2.113518,
+            1.843209,
+            6.772794,
+            3.254227,
+            1.816807,
+            3.512606,
+            1.888757,
+            1.60405,
+            1.898876,
+            1.839836,
+            1.834328,
+            2.300255,
+            2.625664,
+            1.923601,
+            3.472578,
+            5.116497,
+            2.570582,
+            7.099819,
+            1.828914,
+            1.992831,
+            3.162317,
+            3.461698,
+            2.628179
           ],
           "speedup_vs_eager": 1.0
         },
         "optimized": {
           "count": 25,
-          "max_ms": 1.895726,
-          "median_ms": 1.087592,
-          "min_ms": 1.014498,
-          "p95_ms": 1.5496531999999992,
+          "max_ms": 9.458016,
+          "median_ms": 2.583818,
+          "min_ms": 1.392254,
+          "p95_ms": 6.666811599999998,
           "samples_ms": [
-            1.083487,
-            1.339646,
-            1.184038,
-            1.111631,
-            1.064683,
-            1.234878,
-            1.04989,
-            1.057288,
-            1.062285,
-            1.057308,
-            1.014498,
-            1.15446,
-            1.059824,
-            1.270231,
-            1.602155,
-            1.081916,
-            1.134478,
-            1.107687,
-            1.217291,
-            1.070401,
-            1.075966,
-            1.895726,
-            1.087592,
-            1.05687,
-            1.26891
+            1.962385,
+            5.721619,
+            2.592628,
+            1.392254,
+            2.583818,
+            2.153584,
+            2.37911,
+            1.674429,
+            1.746306,
+            3.225664,
+            2.09002,
+            2.003263,
+            3.066983,
+            1.815478,
+            2.125813,
+            1.819554,
+            5.676276,
+            6.780351,
+            9.458016,
+            6.212654,
+            2.181053,
+            3.427297,
+            3.511117,
+            2.625964,
+            3.130886
           ],
-          "speedup_vs_eager": 0.932156543998117
+          "speedup_vs_eager": 0.8902542671349143
         },
         "unoptimized": {
           "count": 25,
-          "max_ms": 1.741503,
-          "median_ms": 1.144699,
-          "min_ms": 1.053729,
-          "p95_ms": 1.4729661999999997,
+          "max_ms": 7.072596,
+          "median_ms": 2.797794,
+          "min_ms": 1.394133,
+          "p95_ms": 6.693461799999996,
           "samples_ms": [
-            1.194894,
-            1.269239,
-            1.282341,
-            1.15866,
-            1.077043,
-            1.119174,
-            1.101576,
-            1.073529,
-            1.070069,
-            1.078755,
-            1.053729,
-            1.354781,
-            1.099152,
-            1.113038,
-            1.216618,
-            1.144699,
-            1.414331,
-            1.099985,
-            1.364655,
-            1.123568,
-            1.079177,
-            1.487625,
-            1.176398,
-            1.222725,
-            1.741503
+            2.209101,
+            6.937569,
+            2.615432,
+            2.12913,
+            2.797794,
+            3.834558,
+            5.005243,
+            3.056526,
+            2.067874,
+            5.717033,
+            1.993829,
+            2.428954,
+            2.176941,
+            1.843174,
+            2.384138,
+            2.052781,
+            1.394133,
+            2.775732,
+            5.520766,
+            7.072596,
+            3.506699,
+            3.096246,
+            3.120592,
+            2.867818,
+            4.511397
           ],
-          "speedup_vs_eager": 0.8856529096295184
+          "speedup_vs_eager": 0.8221673933105867
         }
       },
       "unoptimized": {
         "analysis": {
-          "arithmetic_intensity": 8.007136172204024,
+          "arithmetic_intensity": 12.4990869247626,
           "constant_bytes": 529920,
           "critical_path_ops": 18,
           "dominant_nodes": [
@@ -1841,7 +1802,7 @@
           ],
           "flops": 26282880,
           "input_bytes": 49152,
-          "logical_bytes": 3282432,
+          "logical_bytes": 2102784,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
           "nodes": 24,
           "op_counts": {
@@ -1872,7 +1833,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 2,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape",
               "op": "reshape",
               "output_shape": [
@@ -1896,7 +1857,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 4,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "view",
               "op": "reshape",
               "output_shape": [
@@ -1910,7 +1871,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose",
               "op": "transpose",
               "output_shape": [
@@ -1936,7 +1897,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 4,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "view_1",
               "op": "reshape",
               "output_shape": [
@@ -1950,7 +1911,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose_1",
               "op": "transpose",
               "output_shape": [
@@ -1976,7 +1937,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 4,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "view_2",
               "op": "reshape",
               "output_shape": [
@@ -1990,7 +1951,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose_2",
               "op": "transpose",
               "output_shape": [
@@ -2018,7 +1979,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 7,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose_3",
               "op": "transpose",
               "output_shape": [
@@ -2032,7 +1993,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 8,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_1",
               "op": "reshape",
               "output_shape": [
@@ -2056,7 +2017,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 10,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_2",
               "op": "reshape",
               "output_shape": [
@@ -2095,7 +2056,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 13,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_3",
               "op": "reshape",
               "output_shape": [
@@ -2143,7 +2104,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 17,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_4",
               "op": "reshape",
               "output_shape": [
@@ -2855,35 +2816,17 @@
               "first": 16,
               "last": 23,
               "size_bytes": 49152,
-              "slot": 0
+              "slot": 1
             },
             "down": {
               "first": 21,
               "last": 23,
               "size_bytes": 49152,
-              "slot": 1
-            },
-            "gelu": {
-              "first": 20,
-              "last": 21,
-              "size_bytes": 98304,
-              "slot": 5
+              "slot": 0
             },
             "k": {
               "first": 5,
               "last": 11,
-              "size_bytes": 49152,
-              "slot": 2
-            },
-            "ln1": {
-              "first": 0,
-              "last": 8,
-              "size_bytes": 49152,
-              "slot": 0
-            },
-            "ln2": {
-              "first": 17,
-              "last": 19,
               "size_bytes": 49152,
               "slot": 1
             },
@@ -2891,17 +2834,11 @@
               "first": 14,
               "last": 16,
               "size_bytes": 49152,
-              "slot": 1
+              "slot": 0
             },
             "q": {
               "first": 2,
               "last": 11,
-              "size_bytes": 49152,
-              "slot": 1
-            },
-            "scaled_dot_product_attention": {
-              "first": 11,
-              "last": 14,
               "size_bytes": 49152,
               "slot": 0
             },
@@ -2909,17 +2846,17 @@
               "first": 19,
               "last": 20,
               "size_bytes": 98304,
-              "slot": 4
+              "slot": 3
             },
             "v": {
               "first": 8,
               "last": 11,
               "size_bytes": 49152,
-              "slot": 3
+              "slot": 2
             }
           },
           "naive_bytes": 1228800,
-          "planned_bytes": 393216,
+          "planned_bytes": 245760,
           "slot_specs": {
             "0": {
               "device": "cpu",
@@ -2946,20 +2883,6 @@
               "device": "cpu",
               "dtype": "float32",
               "shape": [
-                12288
-              ]
-            },
-            "4": {
-              "device": "cpu",
-              "dtype": "float32",
-              "shape": [
-                24576
-              ]
-            },
-            "5": {
-              "device": "cpu",
-              "dtype": "float32",
-              "shape": [
                 24576
               ]
             }
@@ -2970,11 +2893,11 @@
           "flops": 0,
           "logical_bytes": 0,
           "nodes": 0,
-          "planned_bytes": 835584
+          "planned_bytes": 983040
         },
         "optimized_nodes": 24,
         "original_analysis": {
-          "arithmetic_intensity": 8.007136172204024,
+          "arithmetic_intensity": 12.4990869247626,
           "constant_bytes": 529920,
           "critical_path_ops": 18,
           "dominant_nodes": [
@@ -3041,7 +2964,7 @@
           ],
           "flops": 26282880,
           "input_bytes": 49152,
-          "logical_bytes": 3282432,
+          "logical_bytes": 2102784,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
           "nodes": 24,
           "op_counts": {
@@ -3072,7 +2995,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 2,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape",
               "op": "reshape",
               "output_shape": [
@@ -3096,7 +3019,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 4,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "view",
               "op": "reshape",
               "output_shape": [
@@ -3110,7 +3033,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose",
               "op": "transpose",
               "output_shape": [
@@ -3136,7 +3059,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 4,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "view_1",
               "op": "reshape",
               "output_shape": [
@@ -3150,7 +3073,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose_1",
               "op": "transpose",
               "output_shape": [
@@ -3176,7 +3099,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 4,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "view_2",
               "op": "reshape",
               "output_shape": [
@@ -3190,7 +3113,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose_2",
               "op": "transpose",
               "output_shape": [
@@ -3218,7 +3141,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 7,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "transpose_3",
               "op": "transpose",
               "output_shape": [
@@ -3232,7 +3155,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 8,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_1",
               "op": "reshape",
               "output_shape": [
@@ -3256,7 +3179,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 10,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_2",
               "op": "reshape",
               "output_shape": [
@@ -3295,7 +3218,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 13,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_3",
               "op": "reshape",
               "output_shape": [
@@ -3343,7 +3266,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 17,
               "flops": 0,
-              "logical_bytes": 98304,
+              "logical_bytes": 0,
               "name": "reshape_4",
               "op": "reshape",
               "output_shape": [
@@ -3374,8 +3297,8 @@
     {
       "autotuning": null,
       "compile_ms": {
-        "optimized": 191.879701,
-        "unoptimized": 99.701347
+        "optimized": 708.606159,
+        "unoptimized": 194.973763
       },
       "correctness": {
         "optimized": {
@@ -3395,7 +3318,7 @@
       "name": "vision_text_fusion_4x32_16",
       "optimized": {
         "analysis": {
-          "arithmetic_intensity": 2.2023550380383856,
+          "arithmetic_intensity": 2.4483713665893037,
           "constant_bytes": 4257064,
           "critical_path_ops": 10,
           "dominant_nodes": [
@@ -3466,7 +3389,7 @@
           ],
           "flops": 13443968,
           "input_bytes": 49664,
-          "logical_bytes": 6104360,
+          "logical_bytes": 5490984,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
           "nodes": 15,
           "op_counts": {
@@ -3481,71 +3404,6 @@
           },
           "output_bytes": 2560,
           "per_node": [
-            {
-              "arithmetic_intensity": 11.512673753066231,
-              "depth": 1,
-              "flops": 3604480,
-              "logical_bytes": 313088,
-              "name": "vision",
-              "op": "conv2d",
-              "output_shape": [
-                4,
-                16,
-                32,
-                32
-              ]
-            },
-            {
-              "arithmetic_intensity": 1.0,
-              "depth": 2,
-              "flops": 524288,
-              "logical_bytes": 524288,
-              "name": "gelu",
-              "op": "gelu",
-              "output_shape": [
-                4,
-                16,
-                32,
-                32
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.0,
-              "depth": 3,
-              "flops": 0,
-              "logical_bytes": 524288,
-              "name": "reshape",
-              "op": "reshape",
-              "output_shape": [
-                4,
-                16384
-              ]
-            },
-            {
-              "arithmetic_intensity": 1.8818698673404928,
-              "depth": 4,
-              "flops": 8388864,
-              "logical_bytes": 4457728,
-              "name": "vision_head",
-              "op": "linear",
-              "output_shape": [
-                4,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.0,
-              "depth": 5,
-              "flops": 0,
-              "logical_bytes": 2048,
-              "name": "reshape_1",
-              "op": "reshape",
-              "output_shape": [
-                4,
-                1,
-                64
-              ]
-            },
             {
               "arithmetic_intensity": 0.0,
               "depth": 1,
@@ -3563,7 +3421,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 2,
               "flops": 0,
-              "logical_bytes": 16384,
+              "logical_bytes": 0,
               "name": "reshape_2",
               "op": "reshape",
               "output_shape": [
@@ -3599,12 +3457,77 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 32768,
+              "logical_bytes": 0,
               "name": "reshape_3",
               "op": "reshape",
               "output_shape": [
                 4,
                 16,
+                64
+              ]
+            },
+            {
+              "arithmetic_intensity": 11.512673753066231,
+              "depth": 1,
+              "flops": 3604480,
+              "logical_bytes": 313088,
+              "name": "vision",
+              "op": "conv2d",
+              "output_shape": [
+                4,
+                16,
+                32,
+                32
+              ]
+            },
+            {
+              "arithmetic_intensity": 1.0,
+              "depth": 2,
+              "flops": 524288,
+              "logical_bytes": 524288,
+              "name": "gelu",
+              "op": "gelu",
+              "output_shape": [
+                4,
+                16,
+                32,
+                32
+              ]
+            },
+            {
+              "arithmetic_intensity": 0.0,
+              "depth": 3,
+              "flops": 0,
+              "logical_bytes": 0,
+              "name": "reshape",
+              "op": "reshape",
+              "output_shape": [
+                4,
+                16384
+              ]
+            },
+            {
+              "arithmetic_intensity": 1.8818698673404928,
+              "depth": 4,
+              "flops": 8388864,
+              "logical_bytes": 4457728,
+              "name": "vision_head",
+              "op": "linear",
+              "output_shape": [
+                4,
+                64
+              ]
+            },
+            {
+              "arithmetic_intensity": 0.0,
+              "depth": 5,
+              "flops": 0,
+              "logical_bytes": 0,
+              "name": "reshape_1",
+              "op": "reshape",
+              "output_shape": [
+                4,
+                1,
                 64
               ]
             },
@@ -3625,7 +3548,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 7,
               "flops": 0,
-              "logical_bytes": 32768,
+              "logical_bytes": 0,
               "name": "reshape_4",
               "op": "reshape",
               "output_shape": [
@@ -3661,7 +3584,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 10,
               "flops": 0,
-              "logical_bytes": 5120,
+              "logical_bytes": 0,
               "name": "reshape_5",
               "op": "reshape",
               "output_shape": [
@@ -3797,6 +3720,109 @@
           },
           "nodes": [
             {
+              "attrs": {},
+              "inputs": [
+                "input_1",
+                "text_embedding_weight_5"
+              ],
+              "name": "text_embedding",
+              "op": "embedding",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  4,
+                  16,
+                  32
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "shape": [
+                  64,
+                  32
+                ]
+              },
+              "inputs": [
+                "text_embedding"
+              ],
+              "name": "reshape_2",
+              "op": "reshape",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  32
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "eps": 1e-05,
+                "normalized_shape": [
+                  32
+                ]
+              },
+              "inputs": [
+                "reshape_2",
+                "text_norm_weight_6",
+                "text_norm_bias_7"
+              ],
+              "name": "text_norm",
+              "op": "layer_norm",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  32
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "text_norm",
+                "text_head_weight_t_8",
+                "text_head_bias_9"
+              ],
+              "name": "text_head",
+              "op": "linear",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  64
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "shape": [
+                  4,
+                  16,
+                  64
+                ]
+              },
+              "inputs": [
+                "text_head"
+              ],
+              "name": "reshape_3",
+              "op": "reshape",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  4,
+                  16,
+                  64
+                ]
+              }
+            },
+            {
               "attrs": {
                 "dilation": [
                   1,
@@ -3908,109 +3934,6 @@
                 "shape": [
                   4,
                   1,
-                  64
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "input_1",
-                "text_embedding_weight_5"
-              ],
-              "name": "text_embedding",
-              "op": "embedding",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  4,
-                  16,
-                  32
-                ]
-              }
-            },
-            {
-              "attrs": {
-                "shape": [
-                  64,
-                  32
-                ]
-              },
-              "inputs": [
-                "text_embedding"
-              ],
-              "name": "reshape_2",
-              "op": "reshape",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  64,
-                  32
-                ]
-              }
-            },
-            {
-              "attrs": {
-                "eps": 1e-05,
-                "normalized_shape": [
-                  32
-                ]
-              },
-              "inputs": [
-                "reshape_2",
-                "text_norm_weight_6",
-                "text_norm_bias_7"
-              ],
-              "name": "text_norm",
-              "op": "layer_norm",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  64,
-                  32
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "text_norm",
-                "text_head_weight_t_8",
-                "text_head_bias_9"
-              ],
-              "name": "text_head",
-              "op": "linear",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  64,
-                  64
-                ]
-              }
-            },
-            {
-              "attrs": {
-                "shape": [
-                  4,
-                  16,
-                  64
-                ]
-              },
-              "inputs": [
-                "text_head"
-              ],
-              "name": "reshape_3",
-              "op": "reshape",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  4,
-                  16,
                   64
                 ]
               }
@@ -4152,82 +4075,45 @@
               "first": 10,
               "last": 12,
               "size_bytes": 16384,
-              "slot": 3
-            },
-            "fusion_1": {
-              "first": 12,
-              "last": 13,
-              "size_bytes": 16384,
-              "slot": 0
+              "slot": 2
             },
             "fusion_2": {
               "first": 13,
               "last": 14,
               "size_bytes": 2560,
-              "slot": 2
-            },
-            "gelu": {
-              "first": 1,
-              "last": 3,
-              "size_bytes": 262144,
-              "slot": 1
-            },
-            "text_embedding": {
-              "first": 5,
-              "last": 7,
-              "size_bytes": 8192,
-              "slot": 1
+              "slot": 0
             },
             "text_head": {
-              "first": 8,
+              "first": 3,
               "last": 10,
               "size_bytes": 16384,
-              "slot": 1
-            },
-            "text_norm": {
-              "first": 7,
-              "last": 8,
-              "size_bytes": 8192,
-              "slot": 2
-            },
-            "vision": {
-              "first": 0,
-              "last": 1,
-              "size_bytes": 262144,
               "slot": 0
             },
             "vision_head": {
-              "first": 3,
+              "first": 8,
               "last": 10,
               "size_bytes": 1024,
-              "slot": 0
+              "slot": 1
             }
           },
           "naive_bytes": 897536,
-          "planned_bytes": 548864,
+          "planned_bytes": 33792,
           "slot_specs": {
             "0": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
-                65536
+                4096
               ]
             },
             "1": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
-                65536
+                256
               ]
             },
             "2": {
-              "device": "cpu",
-              "dtype": "float32",
-              "shape": [
-                2048
-              ]
-            },
-            "3": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -4241,11 +4127,11 @@
           "flops": 0,
           "logical_bytes": 32768,
           "nodes": 1,
-          "planned_bytes": 348672
+          "planned_bytes": 863744
         },
         "optimized_nodes": 15,
         "original_analysis": {
-          "arithmetic_intensity": 2.1905959921318243,
+          "arithmetic_intensity": 2.433847138683996,
           "constant_bytes": 4257064,
           "critical_path_ops": 11,
           "dominant_nodes": [
@@ -4316,7 +4202,7 @@
           ],
           "flops": 13443968,
           "input_bytes": 49664,
-          "logical_bytes": 6137128,
+          "logical_bytes": 5523752,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
           "nodes": 16,
           "op_counts": {
@@ -4362,7 +4248,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 3,
               "flops": 0,
-              "logical_bytes": 524288,
+              "logical_bytes": 0,
               "name": "reshape",
               "op": "reshape",
               "output_shape": [
@@ -4386,7 +4272,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 2048,
+              "logical_bytes": 0,
               "name": "reshape_1",
               "op": "reshape",
               "output_shape": [
@@ -4412,7 +4298,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 2,
               "flops": 0,
-              "logical_bytes": 16384,
+              "logical_bytes": 0,
               "name": "reshape_2",
               "op": "reshape",
               "output_shape": [
@@ -4448,7 +4334,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 32768,
+              "logical_bytes": 0,
               "name": "reshape_3",
               "op": "reshape",
               "output_shape": [
@@ -4474,7 +4360,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 7,
               "flops": 0,
-              "logical_bytes": 32768,
+              "logical_bytes": 0,
               "name": "reshape_4",
               "op": "reshape",
               "output_shape": [
@@ -4522,7 +4408,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 11,
               "flops": 0,
-              "logical_bytes": 5120,
+              "logical_bytes": 0,
               "name": "reshape_5",
               "op": "reshape",
               "output_shape": [
@@ -4571,6 +4457,11 @@
             "nodes_before": 16
           },
           {
+            "name": "fuse_shared_projections",
+            "nodes_after": 15,
+            "nodes_before": 15
+          },
+          {
             "name": "eliminate_dead_nodes",
             "nodes_after": 15,
             "nodes_before": 15
@@ -4585,113 +4476,113 @@
       "timings": {
         "eager": {
           "count": 25,
-          "max_ms": 2.064013,
-          "median_ms": 1.201577,
-          "min_ms": 1.122521,
-          "p95_ms": 1.7024753999999998,
+          "max_ms": 26.729676,
+          "median_ms": 2.590222,
+          "min_ms": 1.649256,
+          "p95_ms": 9.08083199999999,
           "samples_ms": [
-            1.176535,
-            1.631893,
-            1.167321,
-            1.26072,
-            1.720121,
-            1.202897,
-            1.168249,
-            1.351882,
-            1.157954,
-            1.201577,
-            1.471718,
-            1.122521,
-            1.278837,
-            1.182405,
-            1.527725,
-            1.318084,
-            1.183768,
-            1.136053,
-            1.131565,
-            1.150302,
-            1.352124,
-            2.064013,
-            1.155376,
-            1.253826,
-            1.159949
+            2.504663,
+            3.243358,
+            1.897322,
+            1.649256,
+            2.198821,
+            2.091347,
+            3.584635,
+            2.345703,
+            3.263614,
+            2.474345,
+            6.78078,
+            2.005825,
+            3.09098,
+            5.766577,
+            2.848837,
+            2.488795,
+            2.402786,
+            2.667396,
+            2.174069,
+            5.9183,
+            2.316726,
+            9.655845,
+            2.590222,
+            26.729676,
+            3.435176
           ],
           "speedup_vs_eager": 1.0
         },
         "optimized": {
           "count": 25,
-          "max_ms": 1.916011,
-          "median_ms": 1.314517,
-          "min_ms": 1.111723,
-          "p95_ms": 1.6416074,
+          "max_ms": 18.011429,
+          "median_ms": 2.698763,
+          "min_ms": 1.589038,
+          "p95_ms": 4.360912399999999,
           "samples_ms": [
-            1.474301,
-            1.326211,
-            1.566292,
-            1.43441,
-            1.916011,
-            1.314509,
-            1.280791,
-            1.321585,
-            1.298666,
-            1.111723,
-            1.314517,
-            1.263444,
-            1.545766,
-            1.196938,
-            1.619045,
-            1.442854,
-            1.283453,
-            1.302091,
-            1.647248,
-            1.149663,
-            1.273829,
-            1.254761,
-            1.155103,
-            1.577936,
-            1.452332
+            2.229533,
+            3.402818,
+            1.589038,
+            3.126252,
+            2.698763,
+            1.948474,
+            2.276349,
+            2.253728,
+            3.287806,
+            2.150861,
+            2.857892,
+            1.886589,
+            2.004595,
+            2.923524,
+            3.523105,
+            3.108561,
+            2.191834,
+            4.439441,
+            2.084282,
+            4.046798,
+            2.572981,
+            2.935366,
+            18.011429,
+            4.02237,
+            2.179705
           ],
-          "speedup_vs_eager": 0.9140825109146553
+          "speedup_vs_eager": 0.9597812034624751
         },
         "unoptimized": {
           "count": 25,
-          "max_ms": 2.049758,
-          "median_ms": 1.296246,
-          "min_ms": 1.101896,
-          "p95_ms": 1.952331,
+          "max_ms": 7.803069,
+          "median_ms": 2.429569,
+          "min_ms": 1.608292,
+          "p95_ms": 6.058757999999999,
           "samples_ms": [
-            1.939275,
-            1.367374,
-            1.22948,
-            1.242466,
-            1.276831,
-            1.273572,
-            1.464167,
-            1.183282,
-            1.45606,
-            1.214881,
-            1.101896,
-            1.47691,
-            1.432313,
-            1.353456,
-            1.314122,
-            2.049758,
-            1.382104,
-            1.264099,
-            1.228406,
-            1.269002,
-            1.955595,
-            1.298825,
-            1.189609,
-            1.296246,
-            1.251823
+            2.343462,
+            3.035267,
+            1.608292,
+            2.160357,
+            3.650823,
+            2.047476,
+            3.17273,
+            2.429569,
+            2.341516,
+            2.308341,
+            1.65585,
+            2.864793,
+            4.161743,
+            2.198686,
+            3.628304,
+            5.870106,
+            2.066953,
+            1.914522,
+            1.877832,
+            4.010036,
+            6.105921,
+            4.209658,
+            3.155615,
+            7.803069,
+            2.303916
           ],
-          "speedup_vs_eager": 0.92696679488307
+          "speedup_vs_eager": 1.0661240738583675
         }
       },
       "unoptimized": {
         "analysis": {
-          "arithmetic_intensity": 2.1905959921318243,
+          "arithmetic_intensity": 2.433847138683996,
           "constant_bytes": 4257064,
           "critical_path_ops": 11,
           "dominant_nodes": [
@@ -4762,7 +4653,7 @@
           ],
           "flops": 13443968,
           "input_bytes": 49664,
-          "logical_bytes": 6137128,
+          "logical_bytes": 5523752,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
           "nodes": 16,
           "op_counts": {
@@ -4808,7 +4699,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 3,
               "flops": 0,
-              "logical_bytes": 524288,
+              "logical_bytes": 0,
               "name": "reshape",
               "op": "reshape",
               "output_shape": [
@@ -4832,7 +4723,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 2048,
+              "logical_bytes": 0,
               "name": "reshape_1",
               "op": "reshape",
               "output_shape": [
@@ -4858,7 +4749,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 2,
               "flops": 0,
-              "logical_bytes": 16384,
+              "logical_bytes": 0,
               "name": "reshape_2",
               "op": "reshape",
               "output_shape": [
@@ -4894,7 +4785,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 32768,
+              "logical_bytes": 0,
               "name": "reshape_3",
               "op": "reshape",
               "output_shape": [
@@ -4920,7 +4811,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 7,
               "flops": 0,
-              "logical_bytes": 32768,
+              "logical_bytes": 0,
               "name": "reshape_4",
               "op": "reshape",
               "output_shape": [
@@ -4968,7 +4859,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 11,
               "flops": 0,
-              "logical_bytes": 5120,
+              "logical_bytes": 0,
               "name": "reshape_5",
               "op": "reshape",
               "output_shape": [
@@ -5476,36 +5367,18 @@
               "first": 10,
               "last": 12,
               "size_bytes": 16384,
-              "slot": 3
+              "slot": 2
             },
             "fusion_0": {
               "first": 12,
               "last": 13,
               "size_bytes": 16384,
-              "slot": 0
-            },
-            "fusion_1": {
-              "first": 13,
-              "last": 14,
-              "size_bytes": 16384,
-              "slot": 3
+              "slot": 1
             },
             "fusion_2": {
               "first": 14,
               "last": 15,
               "size_bytes": 2560,
-              "slot": 2
-            },
-            "gelu": {
-              "first": 1,
-              "last": 3,
-              "size_bytes": 262144,
-              "slot": 1
-            },
-            "text_embedding": {
-              "first": 5,
-              "last": 7,
-              "size_bytes": 8192,
               "slot": 1
             },
             "text_head": {
@@ -5513,18 +5386,6 @@
               "last": 10,
               "size_bytes": 16384,
               "slot": 1
-            },
-            "text_norm": {
-              "first": 7,
-              "last": 8,
-              "size_bytes": 8192,
-              "slot": 2
-            },
-            "vision": {
-              "first": 0,
-              "last": 1,
-              "size_bytes": 262144,
-              "slot": 0
             },
             "vision_head": {
               "first": 3,
@@ -5534,30 +5395,23 @@
             }
           },
           "naive_bytes": 913920,
-          "planned_bytes": 548864,
+          "planned_bytes": 33792,
           "slot_specs": {
             "0": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
-                65536
+                256
               ]
             },
             "1": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
-                65536
+                4096
               ]
             },
             "2": {
-              "device": "cpu",
-              "dtype": "float32",
-              "shape": [
-                2048
-              ]
-            },
-            "3": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -5571,11 +5425,11 @@
           "flops": 0,
           "logical_bytes": 0,
           "nodes": 0,
-          "planned_bytes": 365056
+          "planned_bytes": 880128
         },
         "optimized_nodes": 16,
         "original_analysis": {
-          "arithmetic_intensity": 2.1905959921318243,
+          "arithmetic_intensity": 2.433847138683996,
           "constant_bytes": 4257064,
           "critical_path_ops": 11,
           "dominant_nodes": [
@@ -5646,7 +5500,7 @@
           ],
           "flops": 13443968,
           "input_bytes": 49664,
-          "logical_bytes": 6137128,
+          "logical_bytes": 5523752,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
           "nodes": 16,
           "op_counts": {
@@ -5692,7 +5546,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 3,
               "flops": 0,
-              "logical_bytes": 524288,
+              "logical_bytes": 0,
               "name": "reshape",
               "op": "reshape",
               "output_shape": [
@@ -5716,7 +5570,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 2048,
+              "logical_bytes": 0,
               "name": "reshape_1",
               "op": "reshape",
               "output_shape": [
@@ -5742,7 +5596,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 2,
               "flops": 0,
-              "logical_bytes": 16384,
+              "logical_bytes": 0,
               "name": "reshape_2",
               "op": "reshape",
               "output_shape": [
@@ -5778,7 +5632,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 5,
               "flops": 0,
-              "logical_bytes": 32768,
+              "logical_bytes": 0,
               "name": "reshape_3",
               "op": "reshape",
               "output_shape": [
@@ -5804,7 +5658,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 7,
               "flops": 0,
-              "logical_bytes": 32768,
+              "logical_bytes": 0,
               "name": "reshape_4",
               "op": "reshape",
               "output_shape": [
@@ -5852,7 +5706,7 @@
               "arithmetic_intensity": 0.0,
               "depth": 11,
               "flops": 0,
-              "logical_bytes": 5120,
+              "logical_bytes": 0,
               "name": "reshape_5",
               "op": "reshape",
               "output_shape": [

@@ -24,43 +24,43 @@
 <text x="28" y="137" fill="#e2e8f0" font-size="12">mlp_8_64_128</text>
 <rect x="230" y="122" width="15.40" height="12" rx="2" fill="#94a3b8"/>
 <text x="252.40" y="133" fill="#cbd5e1" font-size="11">8.000</text>
-<rect x="230" y="141" width="15.40" height="12" rx="2" fill="#fbbf24"/>
-<text x="252.40" y="152" fill="#cbd5e1" font-size="11">8.000</text>
-<rect x="230" y="160" width="7.70" height="12" rx="2" fill="#67e8f9"/>
-<text x="244.70" y="171" fill="#cbd5e1" font-size="11">4.000</text>
+<rect x="230" y="141" width="7.70" height="12" rx="2" fill="#fbbf24"/>
+<text x="244.70" y="152" fill="#cbd5e1" font-size="11">4.000</text>
+<rect x="230" y="160" width="0.00" height="12" rx="2" fill="#67e8f9"/>
+<text x="237.00" y="171" fill="#cbd5e1" font-size="11">0.000</text>
 <text x="28" y="224" fill="#e2e8f0" font-size="12">residual_8_64_128</text>
 <rect x="230" y="209" width="19.25" height="12" rx="2" fill="#94a3b8"/>
 <text x="256.25" y="220" fill="#cbd5e1" font-size="11">10.000</text>
-<rect x="230" y="228" width="15.40" height="12" rx="2" fill="#fbbf24"/>
-<text x="252.40" y="239" fill="#cbd5e1" font-size="11">8.000</text>
-<rect x="230" y="247" width="11.55" height="12" rx="2" fill="#67e8f9"/>
-<text x="248.55" y="258" fill="#cbd5e1" font-size="11">6.000</text>
+<rect x="230" y="228" width="7.70" height="12" rx="2" fill="#fbbf24"/>
+<text x="244.70" y="239" fill="#cbd5e1" font-size="11">4.000</text>
+<rect x="230" y="247" width="3.85" height="12" rx="2" fill="#67e8f9"/>
+<text x="240.85" y="258" fill="#cbd5e1" font-size="11">2.000</text>
 <text x="28" y="311" fill="#e2e8f0" font-size="12">mlp_32_128_256</text>
 <rect x="230" y="296" width="123.21" height="12" rx="2" fill="#94a3b8"/>
 <text x="360.21" y="307" fill="#cbd5e1" font-size="11">64.000</text>
-<rect x="230" y="315" width="123.21" height="12" rx="2" fill="#fbbf24"/>
-<text x="360.21" y="326" fill="#cbd5e1" font-size="11">64.000</text>
-<rect x="230" y="334" width="61.61" height="12" rx="2" fill="#67e8f9"/>
-<text x="298.61" y="345" fill="#cbd5e1" font-size="11">32.000</text>
+<rect x="230" y="315" width="61.61" height="12" rx="2" fill="#fbbf24"/>
+<text x="298.61" y="326" fill="#cbd5e1" font-size="11">32.000</text>
+<rect x="230" y="334" width="0.00" height="12" rx="2" fill="#67e8f9"/>
+<text x="237.00" y="345" fill="#cbd5e1" font-size="11">0.000</text>
 <text x="28" y="398" fill="#e2e8f0" font-size="12">residual_32_128_256</text>
 <rect x="230" y="383" width="154.02" height="12" rx="2" fill="#94a3b8"/>
 <text x="391.02" y="394" fill="#cbd5e1" font-size="11">80.000</text>
-<rect x="230" y="402" width="123.21" height="12" rx="2" fill="#fbbf24"/>
-<text x="360.21" y="413" fill="#cbd5e1" font-size="11">64.000</text>
-<rect x="230" y="421" width="92.41" height="12" rx="2" fill="#67e8f9"/>
-<text x="329.41" y="432" fill="#cbd5e1" font-size="11">48.000</text>
+<rect x="230" y="402" width="61.61" height="12" rx="2" fill="#fbbf24"/>
+<text x="298.61" y="413" fill="#cbd5e1" font-size="11">32.000</text>
+<rect x="230" y="421" width="30.80" height="12" rx="2" fill="#67e8f9"/>
+<text x="267.80" y="432" fill="#cbd5e1" font-size="11">16.000</text>
 <text x="28" y="485" fill="#e2e8f0" font-size="12">mlp_64_256_512</text>
 <rect x="230" y="470" width="492.86" height="12" rx="2" fill="#94a3b8"/>
 <text x="729.86" y="481" fill="#cbd5e1" font-size="11">256.000</text>
-<rect x="230" y="489" width="492.86" height="12" rx="2" fill="#fbbf24"/>
-<text x="729.86" y="500" fill="#cbd5e1" font-size="11">256.000</text>
-<rect x="230" y="508" width="246.43" height="12" rx="2" fill="#67e8f9"/>
-<text x="483.43" y="519" fill="#cbd5e1" font-size="11">128.000</text>
+<rect x="230" y="489" width="246.43" height="12" rx="2" fill="#fbbf24"/>
+<text x="483.43" y="500" fill="#cbd5e1" font-size="11">128.000</text>
+<rect x="230" y="508" width="0.00" height="12" rx="2" fill="#67e8f9"/>
+<text x="237.00" y="519" fill="#cbd5e1" font-size="11">0.000</text>
 <text x="28" y="572" fill="#e2e8f0" font-size="12">residual_64_256_512</text>
 <rect x="230" y="557" width="616.07" height="12" rx="2" fill="#94a3b8"/>
 <text x="853.07" y="568" fill="#cbd5e1" font-size="11">320.000</text>
-<rect x="230" y="576" width="492.86" height="12" rx="2" fill="#fbbf24"/>
-<text x="729.86" y="587" fill="#cbd5e1" font-size="11">256.000</text>
-<rect x="230" y="595" width="369.64" height="12" rx="2" fill="#67e8f9"/>
-<text x="606.64" y="606" fill="#cbd5e1" font-size="11">192.000</text>
+<rect x="230" y="576" width="246.43" height="12" rx="2" fill="#fbbf24"/>
+<text x="483.43" y="587" fill="#cbd5e1" font-size="11">128.000</text>
+<rect x="230" y="595" width="123.21" height="12" rx="2" fill="#67e8f9"/>
+<text x="360.21" y="606" fill="#cbd5e1" font-size="11">64.000</text>
 </g></svg>

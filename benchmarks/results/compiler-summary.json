@@ -1,9 +1,9 @@
 {
   "environment": {
-    "captured_at_utc": "2026-09-28T06:03:32.702154+00:00",
+    "captured_at_utc": "2026-09-28T11:18:34.689954+00:00",
     "cuda_runtime": null,
     "device": "cpu",
-    "git_commit": "af3ef5d27ac748cb47eb34c4c7bc559157413676",
+    "git_commit": "92f3dfddd63e1d5d80b32d7d1f1d87397f9e6cf7",
     "git_dirty": false,
     "machine": "x86_64",
     "percentile_method": "linear_interpolation_at_(n-1)*q",
@@ -21,7 +21,7 @@
       "delta_critical_path_ops": 1,
       "delta_logical_kib": 8.0,
       "delta_nodes": 1,
-      "eager_ms": 0.068411,
+      "eager_ms": 0.086467,
       "logical_kib": 59.625,
       "mflops": 0.20608,
       "name": "mlp_8_64_128",
@@ -29,15 +29,15 @@
         "fused_linear_gelu": 1,
         "linear": 1
       },
-      "optimized_ms": 0.101544,
+      "optimized_ms": 0.081949,
       "optimized_nodes": 2,
-      "optimized_p95_ms": 0.13820759999999996,
-      "optimized_planned_kib": 4.0,
+      "optimized_p95_ms": 0.4635089999999994,
+      "optimized_planned_kib": 0.0,
       "original_nodes": 3,
-      "speedup": 0.6737079492633735,
-      "unoptimized_ms": 0.115097,
+      "speedup": 1.055131850297136,
+      "unoptimized_ms": 0.104404,
       "unoptimized_naive_kib": 8.0,
-      "unoptimized_planned_kib": 8.0
+      "unoptimized_planned_kib": 4.0
     },
     {
       "arithmetic_intensity": 3.214501510574018,
@@ -45,7 +45,7 @@
       "delta_critical_path_ops": 1,
       "delta_logical_kib": 8.0,
       "delta_nodes": 1,
-      "eager_ms": 0.117898,
+      "eager_ms": 0.124776,
       "logical_kib": 82.75,
       "mflops": 0.272384,
       "name": "residual_8_64_128",
@@ -54,15 +54,15 @@
         "fused_linear_gelu": 1,
         "linear": 1
       },
-      "optimized_ms": 0.161412,
+      "optimized_ms": 0.134534,
       "optimized_nodes": 3,
-      "optimized_p95_ms": 0.23151039999999995,
-      "optimized_planned_kib": 6.0,
+      "optimized_p95_ms": 0.2937721999999999,
+      "optimized_planned_kib": 2.0,
       "original_nodes": 4,
-      "speedup": 0.730416573736773,
-      "unoptimized_ms": 0.18312,
+      "speedup": 0.9274681493154148,
+      "unoptimized_ms": 0.16054,
       "unoptimized_naive_kib": 10.0,
-      "unoptimized_planned_kib": 8.0
+      "unoptimized_planned_kib": 4.0
     },
     {
       "arithmetic_intensity": 11.185777777777778,
@@ -70,7 +70,7 @@
       "delta_critical_path_ops": 1,
       "delta_logical_kib": 64.0,
       "delta_nodes": 1,
-      "eager_ms": 0.216941,
+      "eager_ms": 0.272195,
       "logical_kib": 281.25,
       "mflops": 3.221504,
       "name": "mlp_32_128_256",
@@ -78,15 +78,15 @@
         "fused_linear_gelu": 1,
         "linear": 1
       },
-      "optimized_ms": 0.220939,
+      "optimized_ms": 0.242276,
       "optimized_nodes": 2,
-      "optimized_p95_ms": 0.2661241999999999,
-      "optimized_planned_kib": 32.0,
+      "optimized_p95_ms": 1.0570029999999977,
+      "optimized_planned_kib": 0.0,
       "original_nodes": 3,
-      "speedup": 0.981904507579015,
-      "unoptimized_ms": 0.257736,
+      "speedup": 1.1234913899849759,
+      "unoptimized_ms": 0.255119,
       "unoptimized_naive_kib": 64.0,
-      "unoptimized_planned_kib": 64.0
+      "unoptimized_planned_kib": 32.0
     },
     {
       "arithmetic_intensity": 10.400996264009963,
@@ -94,7 +94,7 @@
       "delta_critical_path_ops": 1,
       "delta_logical_kib": 64.0,
       "delta_nodes": 1,
-      "eager_ms": 0.26351,
+      "eager_ms": 0.327647,
       "logical_kib": 401.5,
       "mflops": 4.276224,
       "name": "residual_32_128_256",
@@ -103,15 +103,15 @@
         "fused_linear_gelu": 1,
         "linear": 1
       },
-      "optimized_ms": 0.273212,
+      "optimized_ms": 0.261826,
       "optimized_nodes": 3,
-      "optimized_p95_ms": 0.5128775999999994,
-      "optimized_planned_kib": 48.0,
+      "optimized_p95_ms": 0.7440101999999996,
+      "optimized_planned_kib": 16.0,
       "original_nodes": 4,
-      "speedup": 0.9644891146801752,
-      "unoptimized_ms": 0.297312,
+      "speedup": 1.2513921459289759,
+      "unoptimized_ms": 0.276913,
       "unoptimized_naive_kib": 80.0,
-      "unoptimized_planned_kib": 64.0
+      "unoptimized_planned_kib": 32.0
     },
     {
       "arithmetic_intensity": 22.157683741648107,
@@ -119,7 +119,7 @@
       "delta_critical_path_ops": 1,
       "delta_logical_kib": 256.0,
       "delta_nodes": 1,
-      "eager_ms": 0.77235,
+      "eager_ms": 1.340337,
       "logical_kib": 1122.5,
       "mflops": 25.468928,
       "name": "mlp_64_256_512",
@@ -127,15 +127,15 @@
         "fused_linear_gelu": 1,
         "linear": 1
       },
-      "optimized_ms": 0.703283,
+      "optimized_ms": 1.16603,
       "optimized_nodes": 2,
-      "optimized_p95_ms": 0.9626213999999996,
-      "optimized_planned_kib": 128.0,
+      "optimized_p95_ms": 3.502770599999994,
+      "optimized_planned_kib": 0.0,
       "original_nodes": 3,
-      "speedup": 1.098206554118328,
-      "unoptimized_ms": 0.749597,
+      "speedup": 1.1494875775065823,
+      "unoptimized_ms": 1.040416,
       "unoptimized_naive_kib": 256.0,
-      "unoptimized_planned_kib": 256.0
+      "unoptimized_planned_kib": 128.0
     },
     {
       "arithmetic_intensity": 20.64129756706176,
@@ -143,7 +143,7 @@
       "delta_critical_path_ops": 1,
       "delta_logical_kib": 256.0,
       "delta_nodes": 1,
-      "eager_ms": 0.824583,
+      "eager_ms": 1.374941,
       "logical_kib": 1603.0,
       "mflops": 33.882112,
       "name": "residual_64_256_512",
@@ -152,16 +152,16 @@
         "fused_linear_gelu": 1,
         "linear": 1
       },
-      "optimized_ms": 0.863279,
+      "optimized_ms": 1.283596,
       "optimized_nodes": 3,
-      "optimized_p95_ms": 1.0354618,
-      "optimized_planned_kib": 192.0,
+      "optimized_p95_ms": 2.080513199999999,
+      "optimized_planned_kib": 64.0,
       "original_nodes": 4,
-      "speedup": 0.9551755573806382,
-      "unoptimized_ms": 0.881213,
+      "speedup": 1.0711633566947856,
+      "unoptimized_ms": 1.306994,
       "unoptimized_naive_kib": 320.0,
-      "unoptimized_planned_kib": 256.0
+      "unoptimized_planned_kib": 128.0
     }
   ],
-  "source_sha256": "973f63d82fd88ca5d46665ad523b2360e4f285d864a12ba09b006180fe77c332"
+  "source_sha256": "9ae0929145c3d8aad37c3e300274a43dd501c6bd9ede62f79d25dfbbe4439eec"
 }
