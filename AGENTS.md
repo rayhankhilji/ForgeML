@@ -39,10 +39,13 @@ these exact modern dependency pins, compiler tests and package build at commit
 - Operator semantics are explicit and bounded: `matmul`, `linear`, `add`, `mul`,
   `relu`, `gelu`, `reshape`, `transpose`, `softmax`, `fused_linear_gelu`,
   `layer_norm`,
-  `sdpa`, `conv2d`, and `embedding`. SDPA is inference-only: zero dropout, no
+  `sdpa`, `conv2d`, `embedding`, and `narrow` (static slice; emitted only by
+  `fuse_shared_projections`). SDPA is inference-only: zero dropout, no
   `attn_mask`, no `enable_gqa`. Conv2d is NCHW/OIHW with zero padding only.
   Embedding lookup requires int64 indices and rejects padding/max-norm/sparse
   module options. LayerNorm requires static trailing normalized dimensions.
+  The core `linear` operator is rank-2; the FX frontend wraps higher-rank or
+  rank-1 activations in static reshape views around that core operation.
 - ONNX remains restricted to the default domain/opset 13–22: MatMul, Add, Mul,
   Relu, Gelu, Reshape, Transpose, Softmax, Constant, Identity, Gemm, Conv,
   LayerNormalization, and axis-0 Gather. Reject unsupported attrs/domains.
@@ -54,14 +57,19 @@ these exact modern dependency pins, compiler tests and package build at commit
   untested on this Intel host (all GPU tests skip); do not claim it validated.
 - Do not claim CPU hardware fusion for `fused_linear_gelu` (it is an op-level
   fusion), nor that `MemoryPlan.planned_bytes` is real allocator peak memory.
-  `reshape`/`transpose` intermediates are view/borrowed values; their producers'
-  physical lifetimes must cover all view consumers before a slot may be reused.
+  `reshape`/`transpose`/`narrow` intermediates are view/borrowed values; their
+  producers' physical lifetimes must cover all view consumers before a slot may
+  be reused. The slot arena covers only `out=`-capable ops (`matmul`, `linear`,
+  `add`, `mul`, `relu`); other intermediates are refcounted temporaries.
+  `CompiledModel.__call__` reuses a persistent arena and is NOT reentrant.
 - Graph analysis in `explain()` is a static cost model, not hardware counters:
   report FLOP/logical-byte/arithmetic-intensity/critical-path bounds as modeled
   values and preserve `optimization_delta` semantics.
 - No arbitrary `exec`/`eval` anywhere; ONNX attributes are data, not code.
 - `explain()` output must stay JSON-serializable with no tensor values.
 - Nebula uses rank-zero command authority; nonzero ranks call `Engine.serve()`.
+  At engine init, ranks broadcast a SHA-256 config/dtype/max_requests digest
+  and must agree before the decoder is built (EngineFailed on mismatch).
   Run distributed correctness with `pytest -q -m distributed`; CPU uses Gloo,
   CUDA uses NCCL. Never claim CPU multiprocess tests validate GPU scaling.
 - Runtime errors invalidate caches and fail the engine; do not retry partially

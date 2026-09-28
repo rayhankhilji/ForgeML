@@ -8,6 +8,29 @@ version = "0.1.0"
 readme = "README.md"
 description = "ForgeML: a minimal deep-learning compiler with an IR, optimization passes, and memory planning"
 license = "MIT"
+authors = [
+    {name = "Rayhan Khilji"},
+]
+keywords = [
+    "machine-learning",
+    "deep-learning",
+    "compiler",
+    "inference",
+    "distributed",
+    "triton",
+    "tensor-parallelism",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Software Development :: Compilers",
+]
 requires-python = ">=3.11"
 dependencies = [
     "torch==2.14.0",
@@ -22,6 +45,7 @@ dev = [
     "pytest==9.1.1",
     "ruff==0.16.7",
     "build==1.6.1",
+    "twine==6.0.1",
 ]
 onnx = [
     "onnx==1.22.0",
@@ -30,8 +54,17 @@ gpu = [
     "triton==3.8.0; sys_platform == 'linux' and platform_machine == 'x86_64'",
 ]
 
+[project.urls]
+Homepage = "https://github.com/rayhankhilji/ForgeML"
+Repository = "https://github.com/rayhankhilji/ForgeML"
+Issues = "https://github.com/rayhankhilji/ForgeML/issues"
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+forgeml = ["py.typed"]
+nebula = ["py.typed"]
 
 [tool.ruff]
 line-length = 100
