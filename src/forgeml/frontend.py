@@ -16,6 +16,11 @@ class UnsupportedOperator(GraphError):
     pass
 
 
+class _Static:
+    def __init__(self, value: Any):
+        self.value = value
+
+
 def _spec(t: torch.Tensor) -> TensorSpec:
     return TensorSpec(tuple(t.shape), t.dtype, str(t.device))
 
@@ -27,6 +32,19 @@ def _check_module_state(model: nn.Module) -> None:
         ):
             raise GraphError(
                 f"module {type(m).__name__} is in training mode; call model.eval() before compiling"
+            )
+        if isinstance(m, nn.Conv2d) and m.padding_mode != "zeros":
+            raise UnsupportedOperator(f"Conv2d padding_mode={m.padding_mode!r} is not supported")
+        if isinstance(m, nn.Embedding) and (
+            m.padding_idx is not None
+            or m.max_norm is not None
+            or m.norm_type != 2.0
+            or m.scale_grad_by_freq
+            or m.sparse
+        ):
+            raise UnsupportedOperator(
+                "Embedding options padding_idx/max_norm/norm_type/scale_grad_by_freq/sparse "
+                "are not supported"
             )
 
 
@@ -70,19 +88,62 @@ class _Lowerer:
         self.env: dict[str, str] = {}
         self.const_tensors: dict[str, torch.Tensor] = {}
         self.specs: dict[str, TensorSpec] = {}
+        self.static_values: dict[str, Any] = {}
         self._counter = 0
 
     def _fresh(self, hint: str) -> str:
         self._counter += 1
         return f"{hint}_{self._counter}"
 
+    def _constant(self, hint: str, value: torch.Tensor) -> str:
+        name = self._fresh(hint)
+        detached = value.detach().clone().contiguous()
+        self.builder.constant(name, detached)
+        self.const_tensors[name] = detached
+        self.specs[name] = _spec(detached)
+        return name
+
+    def _maybe_literal(self, value: Any) -> tuple[bool, Any]:
+        import torch.fx
+
+        if isinstance(value, torch.fx.Node):
+            if value.name in self.static_values:
+                return True, self.static_values[value.name]
+            return False, None
+        if isinstance(value, torch.Size):
+            return True, tuple(int(d) for d in value)
+        if isinstance(value, (tuple, list)):
+            resolved = []
+            for item in value:
+                found, literal = self._maybe_literal(item)
+                if not found:
+                    return False, None
+                resolved.append(literal)
+            return True, tuple(resolved)
+        return True, value
+
+    def _literal(self, value: Any) -> Any:
+        found, literal = self._maybe_literal(value)
+        if not found:
+            import torch.fx
+
+            if isinstance(value, torch.fx.Node):
+                raise UnsupportedOperator(
+                    f"fx value {value.name!r} must resolve statically at compile time"
+                )
+            raise UnsupportedOperator(f"unsupported static value {value!r}")
+        return literal
+
     def _arg(self, a: Any) -> str:
         import torch.fx
 
         if isinstance(a, torch.fx.Node):
-            if a.name not in self.env:
+            if a.name in self.env:
+                return self.env[a.name]
+            if a.name in self.static_values:
+                a = self.static_values[a.name]
+            else:
                 raise GraphError(f"fx node {a.name!r} has no produced value")
-            return self.env[a.name]
         if isinstance(a, (int, float, bool)):
             t = torch.tensor(a)
             name = self._fresh("scalar")
@@ -145,9 +206,12 @@ class _Lowerer:
                 continue
             if node.op == "output":
                 return self._finish(node)
-            gname = self._lower_node(traced, node)
-            self.env[node.name] = gname
-            self.specs[gname] = self.builder._env()[gname]
+            lowered = self._lower_node(traced, node)
+            if isinstance(lowered, _Static):
+                self.static_values[node.name] = lowered.value
+                continue
+            self.env[node.name] = lowered
+            self.specs[lowered] = self.builder._env()[lowered]
         raise GraphError("traced graph has no output node")
 
     def _lower_node(self, traced, node) -> str:
@@ -178,6 +242,71 @@ class _Lowerer:
             weight = mod.weight.detach().clone()
             bias = None if mod.bias is None else mod.bias.detach().clone()
             return self._linear(name, x, weight, bias)
+        if isinstance(mod, nn.LayerNorm):
+            normalized = tuple(mod.normalized_shape)
+            if mod.elementwise_affine:
+                if mod.weight is None or mod.bias is None:
+                    raise UnsupportedOperator(f"partially affine LayerNorm at {name!r}")
+                w = self._constant(f"{name}_weight", mod.weight)
+                b = self._constant(f"{name}_bias", mod.bias)
+                return self.builder.add(
+                    name,
+                    "layer_norm",
+                    (x, w, b),
+                    normalized_shape=normalized,
+                    eps=float(mod.eps),
+                )
+            return self.builder.add(
+                name,
+                "layer_norm",
+                (x,),
+                normalized_shape=normalized,
+                eps=float(mod.eps),
+            )
+        if isinstance(mod, nn.Conv2d):
+            if mod.padding_mode != "zeros":
+                raise UnsupportedOperator(
+                    f"Conv2d padding_mode={mod.padding_mode!r} at {name!r} is not supported"
+                )
+            w = self._constant(f"{name}_weight", mod.weight)
+            inputs = (x, w)
+            if mod.bias is not None:
+                inputs += (self._constant(f"{name}_bias", mod.bias),)
+            return self.builder.add(
+                name,
+                "conv2d",
+                inputs,
+                stride=mod.stride,
+                padding=mod.padding,
+                dilation=mod.dilation,
+                groups=mod.groups,
+            )
+        if isinstance(mod, nn.Embedding):
+            if (
+                mod.padding_idx is not None
+                or mod.max_norm is not None
+                or mod.norm_type != 2.0
+                or mod.scale_grad_by_freq
+                or mod.sparse
+            ):
+                raise UnsupportedOperator(
+                    f"Embedding options at {name!r} are not supported in inference lowering"
+                )
+            w = self._constant(f"{name}_weight", mod.weight)
+            return self.builder.add(name, "embedding", (x, w))
+        if isinstance(mod, nn.Flatten):
+            spec = self.specs[x]
+            rank = len(spec.shape)
+            start = mod.start_dim % rank
+            end = mod.end_dim % rank
+            if start > end:
+                raise UnsupportedOperator(f"Flatten at {name!r} has start_dim > end_dim")
+            shape = (
+                spec.shape[:start]
+                + (math.prod(spec.shape[start : end + 1]),)
+                + spec.shape[end + 1 :]
+            )
+            return self.builder.add(name, "reshape", (x,), shape=shape)
         if isinstance(mod, nn.GELU):
             return self.builder.add(name, "gelu", (x,), approximate=mod.approximate)
         if isinstance(mod, nn.ReLU):
@@ -190,8 +319,69 @@ class _Lowerer:
             return self.builder.add(name, "softmax", (x,), dim=mod.dim)
         raise UnsupportedOperator(f"unsupported module {type(mod).__name__} at {name!r}")
 
-    def _lower_function(self, name: str, node) -> str:
+    def _lower_function(self, name: str, node) -> str | _Static:
         target = node.target
+        if target is getattr:
+            bound = self._bind(node, ("input", "name"))
+            source = bound["input"]
+            if not hasattr(source, "name") or source.name not in self.env:
+                raise UnsupportedOperator(f"getattr source at {name!r} must be a tensor value")
+            spec = self.specs[self.env[source.name]]
+            attr = bound["name"]
+            if attr == "shape":
+                return _Static(spec.shape)
+            if attr == "ndim":
+                return _Static(len(spec.shape))
+            if attr == "device":
+                return _Static(torch.device(spec.device))
+            if attr == "dtype":
+                return _Static(spec.dtype)
+            raise UnsupportedOperator(f"getattr {attr!r} at {name!r} is not supported")
+        if target is operator.getitem:
+            bound = self._bind(node, ("input", "index"))
+            value = self._literal(bound["input"])
+            index = self._literal(bound["index"])
+            try:
+                return _Static(value[index])
+            except (IndexError, KeyError, TypeError) as e:
+                raise UnsupportedOperator(f"invalid static index at {name!r}") from e
+        static_binary = {
+            operator.add: operator.add,
+            operator.sub: operator.sub,
+            operator.mul: operator.mul,
+            operator.floordiv: operator.floordiv,
+            operator.truediv: operator.truediv,
+            operator.mod: operator.mod,
+        }
+        if target in static_binary:
+            a_ok, a = self._maybe_literal(node.args[0])
+            b_ok, b = self._maybe_literal(node.args[1])
+            if a_ok and b_ok:
+                return _Static(static_binary[target](a, b))
+        if target in (operator.neg, operator.pos):
+            found, value = self._maybe_literal(node.args[0])
+            if found:
+                return _Static(target(value))
+        if target is torch.arange:
+            positional = tuple(self._literal(a) for a in node.args)
+            if not 1 <= len(positional) <= 3:
+                raise UnsupportedOperator(f"arange at {name!r} expects 1-3 positional arguments")
+            allowed = {"dtype", "device", "layout", "requires_grad", "pin_memory"}
+            extra = set(node.kwargs) - allowed
+            if extra:
+                raise UnsupportedOperator(
+                    f"arange at {name!r} has unsupported kwargs {sorted(extra)}"
+                )
+            options = {k: self._literal(v) for k, v in node.kwargs.items()}
+            if options.get("layout") not in (None, torch.strided):
+                raise UnsupportedOperator(f"arange layout at {name!r} is not supported")
+            if options.get("requires_grad") or options.get("pin_memory"):
+                raise UnsupportedOperator(f"arange options at {name!r} are not supported")
+            try:
+                tensor = torch.arange(*positional, **options).detach()
+            except (RuntimeError, TypeError, ValueError) as e:
+                raise UnsupportedOperator(f"invalid arange arguments at {name!r}: {e}") from e
+            return self._constant(name, tensor)
         if target in (torch.matmul, torch.mm):
             bound = self._bind(node, ("input", "other"))
             return self.builder.add(
@@ -249,7 +439,7 @@ class _Lowerer:
         if target in (torch.reshape, torch.Tensor.reshape, torch.Tensor.view):
             bound = self._bind(node, ("input", "shape"))
             x = self._arg(bound["input"])
-            shape = _static_shape(bound["shape"], self.specs[x].shape, "reshape")
+            shape = _static_shape(self._literal(bound["shape"]), self.specs[x].shape, "reshape")
             return self.builder.add(name, "reshape", (x,), shape=shape)
         if target is torch.transpose:
             bound = self._bind(node, ("input", "dim0", "dim1"))
@@ -257,8 +447,8 @@ class _Lowerer:
                 name,
                 "transpose",
                 (self._arg(bound["input"]),),
-                dim0=bound["dim0"],
-                dim1=bound["dim1"],
+                dim0=self._literal(bound["dim0"]),
+                dim1=self._literal(bound["dim1"]),
             )
         if target in (F.softmax, torch.softmax):
             bound = self._bind(
@@ -268,15 +458,134 @@ class _Lowerer:
             )
             if bound["dtype"] is not None:
                 raise UnsupportedOperator(f"softmax dtype= at {name!r} is not supported")
-            if not isinstance(bound["dim"], int) or isinstance(bound["dim"], bool):
+            dim = self._literal(bound["dim"])
+            if not isinstance(dim, int) or isinstance(dim, bool):
                 raise UnsupportedOperator(f"softmax at {name!r} needs a static int dim")
-            return self.builder.add(name, "softmax", (self._arg(bound["input"]),), dim=bound["dim"])
+            return self.builder.add(name, "softmax", (self._arg(bound["input"]),), dim=dim)
+        if target is F.layer_norm:
+            bound = self._bind(
+                node,
+                ("input", "normalized_shape", "weight", "bias", "eps"),
+                {"weight": None, "bias": None, "eps": 1e-5},
+            )
+            x = self._arg(bound["input"])
+            normalized = self._literal(bound["normalized_shape"])
+            if isinstance(normalized, int):
+                normalized = (normalized,)
+            if (bound["weight"] is None) != (bound["bias"] is None):
+                raise UnsupportedOperator(f"layer_norm at {name!r} needs weight and bias together")
+            inputs = (x,)
+            if bound["weight"] is not None:
+                inputs += (self._arg(bound["weight"]), self._arg(bound["bias"]))
+            return self.builder.add(
+                name,
+                "layer_norm",
+                inputs,
+                normalized_shape=tuple(normalized),
+                eps=float(self._literal(bound["eps"])),
+            )
+        if target is F.scaled_dot_product_attention:
+            bound = self._bind(
+                node,
+                (
+                    "query",
+                    "key",
+                    "value",
+                    "attn_mask",
+                    "dropout_p",
+                    "is_causal",
+                    "scale",
+                    "enable_gqa",
+                ),
+                {
+                    "attn_mask": None,
+                    "dropout_p": 0.0,
+                    "is_causal": False,
+                    "scale": None,
+                    "enable_gqa": False,
+                },
+            )
+            if bound["attn_mask"] is not None:
+                raise UnsupportedOperator(f"sdpa attn_mask at {name!r} is not supported")
+            if self._literal(bound["dropout_p"]) != 0:
+                raise UnsupportedOperator(f"sdpa dropout_p at {name!r} must be zero")
+            if self._literal(bound["enable_gqa"]) is not False:
+                raise UnsupportedOperator(f"sdpa enable_gqa at {name!r} is not supported")
+            is_causal = self._literal(bound["is_causal"])
+            if not isinstance(is_causal, bool):
+                raise UnsupportedOperator(f"sdpa is_causal at {name!r} must be a bool")
+            scale = self._literal(bound["scale"])
+            return self.builder.add(
+                name,
+                "sdpa",
+                (
+                    self._arg(bound["query"]),
+                    self._arg(bound["key"]),
+                    self._arg(bound["value"]),
+                ),
+                is_causal=is_causal,
+                scale=scale,
+            )
+        if target in (F.conv2d, torch.conv2d):
+            bound = self._bind(
+                node,
+                ("input", "weight", "bias", "stride", "padding", "dilation", "groups"),
+                {"bias": None, "stride": 1, "padding": 0, "dilation": 1, "groups": 1},
+            )
+            inputs = (self._arg(bound["input"]), self._arg(bound["weight"]))
+            if bound["bias"] is not None:
+                inputs += (self._arg(bound["bias"]),)
+            return self.builder.add(
+                name,
+                "conv2d",
+                inputs,
+                stride=self._literal(bound["stride"]),
+                padding=self._literal(bound["padding"]),
+                dilation=self._literal(bound["dilation"]),
+                groups=self._literal(bound["groups"]),
+            )
+        if target in (F.embedding, torch.embedding):
+            bound = self._bind(node, ("input", "weight"))
+            return self.builder.add(
+                name,
+                "embedding",
+                (self._arg(bound["input"]), self._arg(bound["weight"])),
+            )
+        if target is torch.flatten:
+            bound = self._bind(
+                node, ("input", "start_dim", "end_dim"), {"start_dim": 0, "end_dim": -1}
+            )
+            x = self._arg(bound["input"])
+            spec = self.specs[x]
+            rank = len(spec.shape)
+            start = self._literal(bound["start_dim"]) % rank
+            end = self._literal(bound["end_dim"]) % rank
+            if start > end:
+                raise UnsupportedOperator(f"flatten at {name!r} has start_dim > end_dim")
+            shape = (
+                spec.shape[:start]
+                + (math.prod(spec.shape[start : end + 1]),)
+                + spec.shape[end + 1 :]
+            )
+            return self.builder.add(name, "reshape", (x,), shape=shape)
         raise UnsupportedOperator(
             f"unsupported function {getattr(target, '__name__', target)!r} at {name!r}"
         )
 
-    def _lower_method(self, name: str, node) -> str:
+    def _lower_method(self, name: str, node) -> str | _Static:
         method = node.target
+        if method in ("size", "dim", "ndim"):
+            bound = self._bind(node, ("input", "dim"), {"dim": None})
+            x = self._arg(bound["input"])
+            shape = self.specs[x].shape
+            if method in ("dim", "ndim") and bound["dim"] is None:
+                return _Static(len(shape))
+            if bound["dim"] is None:
+                return _Static(shape)
+            index = self._literal(bound["dim"])
+            if not isinstance(index, int) or isinstance(index, bool):
+                raise UnsupportedOperator(f"{method} at {name!r} needs an int dimension")
+            return _Static(shape[index])
         if method in ("matmul", "mm"):
             bound = self._bind(node, ("input", "other"))
             return self.builder.add(
@@ -288,12 +597,29 @@ class _Lowerer:
             if len(node.args) < 2:
                 raise UnsupportedOperator(f"{method} at {name!r} needs a shape")
             x = self._arg(node.args[0])
-            raw = node.args[1:]
+            raw = tuple(self._literal(v) for v in node.args[1:])
             if len(raw) == 1 and isinstance(raw[0], (tuple, list)):
                 dims = list(raw[0])
             else:
                 dims = list(raw)
             shape = _static_shape(tuple(dims), self.specs[x].shape, method)
+            return self.builder.add(name, "reshape", (x,), shape=shape)
+        if method == "flatten":
+            bound = self._bind(
+                node, ("input", "start_dim", "end_dim"), {"start_dim": 0, "end_dim": -1}
+            )
+            x = self._arg(bound["input"])
+            spec = self.specs[x]
+            rank = len(spec.shape)
+            start = self._literal(bound["start_dim"]) % rank
+            end = self._literal(bound["end_dim"]) % rank
+            if start > end:
+                raise UnsupportedOperator(f"flatten at {name!r} has start_dim > end_dim")
+            shape = (
+                spec.shape[:start]
+                + (math.prod(spec.shape[start : end + 1]),)
+                + spec.shape[end + 1 :]
+            )
             return self.builder.add(name, "reshape", (x,), shape=shape)
         if method == "transpose":
             bound = self._bind(node, ("input", "dim0", "dim1"))
@@ -301,8 +627,8 @@ class _Lowerer:
                 name,
                 "transpose",
                 (self._arg(bound["input"]),),
-                dim0=bound["dim0"],
-                dim1=bound["dim1"],
+                dim0=self._literal(bound["dim0"]),
+                dim1=self._literal(bound["dim1"]),
             )
         if method == "t":
             bound = self._bind(node, ("input",))
@@ -314,9 +640,10 @@ class _Lowerer:
             bound = self._bind(node, ("input", "dim", "dtype"), {"dtype": None})
             if bound["dtype"] is not None:
                 raise UnsupportedOperator(f"softmax dtype= at {name!r} is not supported")
-            if not isinstance(bound["dim"], int) or isinstance(bound["dim"], bool):
+            dim = self._literal(bound["dim"])
+            if not isinstance(dim, int) or isinstance(dim, bool):
                 raise UnsupportedOperator(f"softmax at {name!r} needs a static int dim")
-            return self.builder.add(name, "softmax", (self._arg(bound["input"]),), dim=bound["dim"])
+            return self.builder.add(name, "softmax", (self._arg(bound["input"]),), dim=dim)
         raise UnsupportedOperator(f"unsupported method {method!r} at {name!r}")
 
     def _finish(self, output_node) -> Graph:
@@ -383,6 +710,9 @@ _ONNX_OPS = {
     "Constant",
     "Identity",
     "Gemm",
+    "Conv",
+    "LayerNormalization",
+    "Gather",
 }
 
 
@@ -669,6 +999,98 @@ def from_onnx(model_or_path, example_inputs: tuple[torch.Tensor, ...] | None = N
                     f"Reshape node {node.name!r} resolved to non-positive dims"
                 )
             set_out(out, builder.add(out, "reshape", (ins[0],), shape=tuple(resolved)))
+            continue
+        if node.op_type == "Conv":
+            _onnx_check_attrs(node, attrs, {"auto_pad", "strides", "pads", "dilations", "group"})
+            if len(ins) not in (2, 3):
+                raise GraphError(f"Conv node {node.name!r} expects 2 or 3 inputs")
+            auto_pad = attrs.get("auto_pad", b"NOTSET")
+            if isinstance(auto_pad, bytes):
+                auto_pad = auto_pad.decode("utf-8")
+            if auto_pad not in ("NOTSET", ""):
+                raise UnsupportedOperator(
+                    f"Conv node {node.name!r} auto_pad={auto_pad!r} is not supported"
+                )
+            strides = attrs.get("strides", [1, 1])
+            pads = attrs.get("pads", [0, 0])
+            dilations = attrs.get("dilations", [1, 1])
+            group = attrs.get("group", 1)
+            if len(strides) != 2 or len(dilations) != 2:
+                raise UnsupportedOperator(
+                    f"Conv node {node.name!r} requires rank-2 spatial parameters"
+                )
+            if len(pads) == 4:
+                if pads[0] != pads[2] or pads[1] != pads[3]:
+                    raise UnsupportedOperator(
+                        f"Conv node {node.name!r} asymmetric pads {pads} are not supported"
+                    )
+                padding = (pads[0], pads[1])
+            elif len(pads) == 2:
+                padding = tuple(pads)
+            else:
+                raise UnsupportedOperator(f"Conv node {node.name!r} has invalid pads {pads}")
+            set_out(
+                out,
+                builder.add(
+                    out,
+                    "conv2d",
+                    tuple(ins),
+                    stride=tuple(strides),
+                    padding=padding,
+                    dilation=tuple(dilations),
+                    groups=int(group),
+                ),
+            )
+            continue
+        if node.op_type == "LayerNormalization":
+            _onnx_check_attrs(node, attrs, {"axis", "epsilon", "stash_type"})
+            if attrs.get("stash_type", 1) != 1:
+                raise UnsupportedOperator(
+                    f"LayerNormalization node {node.name!r} stash_type is not supported"
+                )
+            if len(ins) not in (2, 3):
+                raise GraphError(
+                    f"LayerNormalization node {node.name!r} expects X, Scale and optional B"
+                )
+            x_spec = spec_of_graph_name(ins[0])
+            axis = int(attrs.get("axis", -1))
+            rank = len(x_spec.shape)
+            if not -rank <= axis < rank:
+                raise GraphError(f"LayerNormalization node {node.name!r} axis {axis} out of range")
+            axis %= rank
+            normalized = x_spec.shape[axis:]
+            inputs = tuple(ins)
+            if len(ins) == 2:
+                scale_spec = spec_of_graph_name(ins[1])
+                bias_t = torch.zeros(
+                    scale_spec.shape,
+                    dtype=scale_spec.dtype,
+                    device=scale_spec.device,
+                )
+                bias = fresh(f"{out}_zero_bias")
+                builder.constant(bias, bias_t)
+                const_tensors[bias] = bias_t
+                env[bias] = bias
+                inputs += (bias,)
+            set_out(
+                out,
+                builder.add(
+                    out,
+                    "layer_norm",
+                    inputs,
+                    normalized_shape=normalized,
+                    eps=float(attrs.get("epsilon", 1e-5)),
+                ),
+            )
+            continue
+        if node.op_type == "Gather":
+            _onnx_check_attrs(node, attrs, {"axis"})
+            _onnx_check_arity(node, 2)
+            if int(attrs.get("axis", 0)) != 0:
+                raise UnsupportedOperator(
+                    f"Gather node {node.name!r} only supports axis=0 embedding lookup"
+                )
+            set_out(out, builder.add(out, "embedding", (ins[1], ins[0])))
             continue
         if node.op_type == "Gemm":
             _onnx_check_attrs(node, attrs, {"alpha", "beta", "transA", "transB"})

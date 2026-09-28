@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 from forgeml.ir import Graph, TensorSpec
 
+VIEW_LIKE_OPS = {"reshape"}
+
 
 @dataclass(frozen=True)
 class Allocation:
@@ -16,12 +18,14 @@ class Allocation:
 @dataclass
 class MemoryPlan:
     allocations: dict[str, Allocation]
+    aliases: dict[str, str]
     slot_specs: dict[int, TensorSpec]
     naive_bytes: int
     planned_bytes: int
 
     def to_dict(self) -> dict:
         return {
+            "aliases": dict(self.aliases),
             "allocations": {
                 k: {
                     "slot": a.slot,
@@ -41,11 +45,31 @@ def plan_memory(graph: Graph) -> MemoryPlan:
     graph.validate()
     outputs = set(graph.outputs)
     index = {n.name: i for i, n in enumerate(graph.nodes)}
-    last_use: dict[str, int] = {}
+    by_name = {n.name: n for n in graph.nodes}
+    consumers: dict[str, list[str]] = {}
     for node in graph.nodes:
-        for i in node.inputs:
+        for i in set(node.inputs):
             if i in index:
-                last_use[i] = max(last_use.get(i, 0), index[node.name])
+                consumers.setdefault(i, []).append(node.name)
+
+    memo: dict[str, int] = {}
+
+    def logical_last(name: str) -> int:
+        if name in memo:
+            return memo[name]
+        last = index[name]
+        for consumer_name in consumers.get(name, ()):
+            consumer = by_name[consumer_name]
+            contribution = (
+                logical_last(consumer_name)
+                if consumer.op in VIEW_LIKE_OPS
+                else index[consumer_name]
+            )
+            last = max(last, contribution)
+        memo[name] = last
+        return last
+
+    aliases: dict[str, str] = {}
     allocations: dict[str, Allocation] = {}
     slot_specs: dict[int, TensorSpec] = {}
     slot_last: dict[int, int] = {}
@@ -55,8 +79,11 @@ def plan_memory(graph: Graph) -> MemoryPlan:
         if node.name in outputs:
             continue
         naive += node.spec.nbytes
+        if node.op in VIEW_LIKE_OPS:
+            aliases[node.name] = node.inputs[0]
+            continue
         first = index[node.name]
-        last = last_use.get(node.name, first)
+        last = logical_last(node.name)
         need = node.spec.nbytes
         best = None
         for slot, spec in slot_specs.items():
@@ -77,4 +104,4 @@ def plan_memory(graph: Graph) -> MemoryPlan:
         slot_last[best] = last
         allocations[node.name] = Allocation(best, need, first, last)
     planned = sum(s.shape[0] * s.dtype.itemsize for s in slot_specs.values())
-    return MemoryPlan(allocations, slot_specs, naive, planned)
+    return MemoryPlan(allocations, aliases, slot_specs, naive, planned)

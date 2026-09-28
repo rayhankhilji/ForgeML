@@ -150,6 +150,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="forgeml", description="Inspect and benchmark ForgeML")
     commands = parser.add_subparsers(dest="command", required=True)
     bench = commands.add_parser("benchmark")
+    bench.add_argument("--suite", choices=("mlp", "neural"), default="mlp")
     bench.add_argument("--device", default="cpu")
     bench.add_argument("--backend", choices=("torch", "triton", "auto"), default="torch")
     bench.add_argument("--dtype", choices=("float32", "float16", "bfloat16"), default="float32")
@@ -181,15 +182,28 @@ def main() -> None:
     if args.threads < 1:
         parser.error("--threads must be positive")
     torch.set_num_threads(args.threads)
-    report = benchmark_compiler(
-        device=args.device,
-        dtype=getattr(torch, args.dtype),
-        backend=args.backend,
-        warmup=args.warmup,
-        repeats=args.repeats,
-        seed=args.seed,
-        autotune=args.autotune,
-    )
+    if args.suite == "neural":
+        from forgeml.neural import benchmark_neural
+
+        report = benchmark_neural(
+            device=args.device,
+            dtype=getattr(torch, args.dtype),
+            backend=args.backend,
+            warmup=args.warmup,
+            repeats=args.repeats,
+            seed=args.seed,
+            autotune=args.autotune,
+        )
+    else:
+        report = benchmark_compiler(
+            device=args.device,
+            dtype=getattr(torch, args.dtype),
+            backend=args.backend,
+            warmup=args.warmup,
+            repeats=args.repeats,
+            seed=args.seed,
+            autotune=args.autotune,
+        )
     if args.output:
         write_report(report, args.output)
         print(f"Measured {len(report['workloads'])} workloads; report: {args.output}")

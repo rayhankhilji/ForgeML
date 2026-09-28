@@ -44,6 +44,12 @@ def test_explain_is_json_serializable():
     e = c.explain()
     assert e["optimized_nodes"] <= e["original_nodes"]
     assert e["memory_plan"]["planned_bytes"] <= e["memory_plan"]["naive_bytes"]
+    assert e["analysis"]["flops"] > 0
+    assert e["analysis"]["critical_path_ops"] > 0
+    assert e["original_analysis"]["nodes"] == e["original_nodes"]
+    assert e["optimization_delta"]["nodes"] == e["original_nodes"] - e["optimized_nodes"]
+    assert e["optimization_delta"]["flops"] >= 0
+    assert e["optimization_delta"]["planned_bytes"] >= 0
 
 
 def test_noncontiguous_input_accepted():
@@ -68,6 +74,25 @@ def test_explicit_graph_compiles():
     g = from_torch(m, (x,))
     c = compile(g)
     torch.testing.assert_close(c(x), m(x))
+
+
+def test_view_like_node_borrows_source_until_last_use():
+    from forgeml.ir import GraphBuilder, TensorSpec
+
+    def spec(*shape):
+        return TensorSpec(tuple(shape), torch.float32, "cpu")
+
+    b = GraphBuilder({"x": spec(8), "z": spec(2, 4)})
+    b.add("a", "relu", ("x",))
+    b.add("r", "reshape", ("a",), shape=(2, 4))
+    b.add("c", "relu", ("z",))
+    b.add("y", "add", ("r", "c"))
+    c = compile(b.finish(("y",)), optimize=False)
+    assert c.memory_plan.aliases == {"r": "a"}
+    assert "r" not in c.memory_plan.allocations
+    x = torch.randn(8)
+    z = torch.randn(2, 4)
+    torch.testing.assert_close(c(x, z), torch.relu(x).reshape(2, 4) + torch.relu(z))
 
 
 def test_output_alias_not_clobbered_by_slot_reuse():

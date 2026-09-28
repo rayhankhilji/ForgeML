@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import torch
 
 from forgeml.ir import Graph, GraphError, Node
+from forgeml.memory import plan_memory
 from forgeml.ops import evaluate
 
 _FOLD_LIMIT_BYTES = 64 * 1024 * 1024
@@ -63,6 +64,84 @@ def fold_constants(graph: Graph) -> Graph:
     return _rebuild(graph, nodes, constants)
 
 
+def _resolve(aliases: dict[str, str], name: str) -> str:
+    while aliases.get(name, name) != name:
+        name = aliases[name]
+    return name
+
+
+def simplify_algebra(graph: Graph) -> Graph:
+    aliases: dict[str, str] = {}
+    nodes: list[Node] = []
+    by_name: dict[str, Node] = {}
+    specs = graph.specs()
+    for node in graph.nodes:
+        inputs = tuple(_resolve(aliases, i) for i in node.inputs)
+        node = Node(node.name, node.op, inputs, dict(node.attrs), node.spec)
+        if node.op == "reshape" and specs[node.inputs[0]].shape == node.spec.shape:
+            aliases[node.name] = node.inputs[0]
+            continue
+        if node.op == "transpose":
+            source = by_name.get(node.inputs[0])
+            if (
+                source is not None
+                and source.op == "transpose"
+                and node.attrs["dim0"] == source.attrs["dim0"]
+                and node.attrs["dim1"] == source.attrs["dim1"]
+            ):
+                aliases[node.name] = _resolve(aliases, source.inputs[0])
+                continue
+        aliases[node.name] = node.name
+        by_name[node.name] = node
+        nodes.append(node)
+    outputs = tuple(_resolve(aliases, name) for name in graph.outputs)
+    rewritten = Graph(
+        inputs=dict(graph.inputs),
+        constants=dict(graph.constants),
+        nodes=nodes,
+        outputs=outputs,
+        output_is_tuple=graph.output_is_tuple,
+    )
+    rewritten.validate()
+    return eliminate_dead_nodes(rewritten)
+
+
+def _freeze(value):
+    if isinstance(value, (tuple, list)):
+        return tuple(_freeze(v) for v in value)
+    if isinstance(value, dict):
+        return tuple(sorted((k, _freeze(v)) for k, v in value.items()))
+    return value
+
+
+def common_subexpression_elimination(graph: Graph) -> Graph:
+    aliases: dict[str, str] = {}
+    seen: dict[tuple, str] = {}
+    nodes: list[Node] = []
+    for node in graph.nodes:
+        inputs = tuple(_resolve(aliases, i) for i in node.inputs)
+        key = (node.op, inputs, _freeze(node.attrs), node.spec)
+        if key in seen:
+            aliases[node.name] = seen[key]
+            continue
+        rewritten = Node(node.name, node.op, inputs, dict(node.attrs), node.spec)
+        seen[key] = node.name
+        aliases[node.name] = node.name
+        nodes.append(rewritten)
+    outputs = tuple(_resolve(aliases, name) for name in graph.outputs)
+    used = {i for n in nodes for i in n.inputs} | set(outputs)
+    constants = {k: v for k, v in graph.constants.items() if k in used}
+    rewritten = Graph(
+        inputs=dict(graph.inputs),
+        constants=constants,
+        nodes=nodes,
+        outputs=outputs,
+        output_is_tuple=graph.output_is_tuple,
+    )
+    rewritten.validate()
+    return rewritten
+
+
 def fuse_linear_gelu(graph: Graph) -> Graph:
     consumers: dict[str, list[str]] = {}
     for node in graph.nodes:
@@ -111,7 +190,7 @@ def fuse_linear_gelu(graph: Graph) -> Graph:
     return _rebuild(graph, nodes, constants)
 
 
-def schedule(graph: Graph) -> Graph:
+def _topological_order(graph: Graph, score) -> list[Node]:
     outputs = set(graph.outputs)
     index = {n.name: i for i, n in enumerate(graph.nodes)}
     node_names = set(index)
@@ -137,7 +216,7 @@ def schedule(graph: Graph) -> Graph:
     order: list[Node] = []
     by_name = {n.name: n for n in graph.nodes}
     while ready:
-        best = max(ready, key=lambda n: (freed_bytes(n) - n.spec.nbytes, -index[n.name]))
+        best = max(ready, key=lambda n: score(n, index[n.name], freed_bytes(n)))
         ready.remove(best)
         order.append(best)
         for consumer in consumers.get(best.name, ()):
@@ -149,7 +228,34 @@ def schedule(graph: Graph) -> Graph:
                 remaining_consumers[i] -= 1
     if len(order) != len(graph.nodes):
         raise GraphError("graph contains a cycle")
-    return _rebuild(graph, order, dict(graph.constants))
+    return order
+
+
+def schedule(graph: Graph) -> Graph:
+    candidates = (
+        lambda node, index, freed: (freed - node.spec.nbytes, -index),
+        lambda node, index, freed: (freed - 2 * node.spec.nbytes, -index),
+        lambda node, index, freed: (freed - node.spec.nbytes // 2, -index),
+        lambda node, index, freed: (-node.spec.nbytes, freed, -index),
+        lambda node, index, freed: (-index,),
+        lambda node, index, freed: (index,),
+    )
+    orders = []
+    seen = set()
+    for score in candidates:
+        order = _topological_order(graph, score)
+        names = tuple(n.name for n in order)
+        if names not in seen:
+            seen.add(names)
+            orders.append(order)
+    best = min(
+        orders,
+        key=lambda order: (
+            plan_memory(_rebuild(graph, order, dict(graph.constants))).planned_bytes,
+            tuple(node.name for node in order),
+        ),
+    )
+    return _rebuild(graph, best, dict(graph.constants))
 
 
 def optimize(graph: Graph) -> tuple[Graph, list[PassRecord]]:
@@ -160,7 +266,10 @@ def optimize(graph: Graph) -> tuple[Graph, list[PassRecord]]:
         ("eliminate_dead_nodes", eliminate_dead_nodes),
         ("fold_constants", fold_constants),
         ("eliminate_dead_nodes", eliminate_dead_nodes),
+        ("simplify_algebra", simplify_algebra),
+        ("common_subexpression_elimination", common_subexpression_elimination),
         ("fuse_linear_gelu", fuse_linear_gelu),
+        ("eliminate_dead_nodes", eliminate_dead_nodes),
         ("schedule", schedule),
     ):
         before = len(work.nodes)

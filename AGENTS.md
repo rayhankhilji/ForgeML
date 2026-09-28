@@ -20,9 +20,10 @@ these exact modern dependency pins, compiler tests and package build at commit
 ```bash
 .venv/bin/python -m pytest tests/ -q          # GPU tests auto-skip without CUDA+triton
 .venv/bin/python -m pytest tests/ -q -m gpu   # GPU-only run (requires CUDA GPU + triton)
-.venv/bin/ruff check src/forgeml tests examples/compile_mlp.py
-.venv/bin/ruff format --check src/forgeml tests examples/compile_mlp.py
+.venv/bin/ruff check src tests examples
+.venv/bin/ruff format --check src tests examples
 .venv/bin/python examples/compile_mlp.py
+.venv/bin/python -m forgeml.benchmarks benchmark --suite neural --warmup 5 --repeats 25 --threads 1 --output /tmp/neural-cpu.json
 ```
 
 ## Contracts
@@ -35,7 +36,16 @@ these exact modern dependency pins, compiler tests and package build at commit
   Dropout/BatchNorm.
 - Shapes are static: every dimension must be a positive integer; zero/dynamic
   dims fail in `TensorSpec`/`Graph.validate()`.
-- Backends: `torch` (default), `triton`, and `auto`. `triton`/`auto` map
+- Operator semantics are explicit and bounded: `matmul`, `add`, `mul`, `relu`,
+  `gelu`, `reshape`, `transpose`, `softmax`, `fused_linear_gelu`, `layer_norm`,
+  `sdpa`, `conv2d`, and `embedding`. SDPA is inference-only: zero dropout, no
+  `attn_mask`, no `enable_gqa`. Conv2d is NCHW/OIHW with zero padding only.
+  Embedding lookup requires int64 indices and rejects padding/max-norm/sparse
+  module options. LayerNorm requires static trailing normalized dimensions.
+- ONNX remains restricted to the default domain/opset 13–22: MatMul, Add, Mul,
+  Relu, Gelu, Reshape, Transpose, Softmax, Constant, Identity, Gemm, Conv,
+  LayerNormalization, and axis-0 Gather. Reject unsupported attrs/domains.
+- Backends: `torch` (default), `triton`, and `auto`. `triton`/`auto` map only
   eligible CUDA `matmul`/`fused_linear_gelu` nodes to the Triton kernel in
   `src/forgeml/_triton.py` (mixed execution with torch fallback for the rest);
   `triton` requires CUDA + the triton package and errors clearly otherwise.
@@ -43,6 +53,11 @@ these exact modern dependency pins, compiler tests and package build at commit
   untested on this Intel host (all GPU tests skip); do not claim it validated.
 - Do not claim CPU hardware fusion for `fused_linear_gelu` (it is an op-level
   fusion), nor that `MemoryPlan.planned_bytes` is real allocator peak memory.
+  `reshape` intermediates are view/borrowed values; their producers' physical
+  lifetimes must cover all view consumers before a slot may be reused.
+- Graph analysis in `explain()` is a static cost model, not hardware counters:
+  report FLOP/logical-byte/arithmetic-intensity/critical-path bounds as modeled
+  values and preserve `optimization_delta` semantics.
 - No arbitrary `exec`/`eval` anywhere; ONNX attributes are data, not code.
 - `explain()` output must stay JSON-serializable with no tensor values.
 - Nebula uses rank-zero command authority; nonzero ranks call `Engine.serve()`.

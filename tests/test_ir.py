@@ -195,3 +195,65 @@ def test_mermaid_unique_ids_and_label_escaping():
 
     ids = _re.findall(r"^    (v\d+)\[", m, _re.MULTILINE)
     assert len(ids) == len(set(ids)) == 3
+
+
+def test_neural_operator_specs():
+    b = GraphBuilder(
+        {
+            "x": spec(2, 4),
+            "q": spec(1, 2, 3, 4),
+            "k": spec(1, 2, 3, 4),
+            "v": spec(1, 2, 3, 4),
+            "image": spec(2, 3, 8, 8),
+            "ids": TensorSpec((2, 5), torch.int64, "cpu"),
+        }
+    )
+    b.constant("ln_w", torch.ones(4))
+    b.constant("ln_b", torch.zeros(4))
+    b.constant("conv_w", torch.randn(6, 3, 3, 3))
+    b.constant("emb_w", torch.randn(10, 7))
+    b.add("ln", "layer_norm", ("x", "ln_w", "ln_b"), normalized_shape=(4,), eps=1e-5)
+    b.add("attn", "sdpa", ("q", "k", "v"), is_causal=True)
+    b.add(
+        "conv",
+        "conv2d",
+        ("image", "conv_w"),
+        stride=1,
+        padding=1,
+        dilation=1,
+        groups=1,
+    )
+    b.add("emb", "embedding", ("ids", "emb_w"))
+    g = b.finish(("ln", "attn", "conv", "emb"))
+    assert g.specs()["attn"].shape == (1, 2, 3, 4)
+    assert g.specs()["conv"].shape == (2, 6, 8, 8)
+    assert g.specs()["emb"].shape == (2, 5, 7)
+
+
+def test_layer_norm_accepts_scalar_normalized_shape():
+    b = GraphBuilder({"x": spec(2, 4)})
+    b.add("ln", "layer_norm", ("x",), normalized_shape=4, eps=1e-5)
+    g = b.finish(("ln",))
+    assert g.specs()["ln"].shape == (2, 4)
+
+
+def test_neural_operator_rejections():
+    b = GraphBuilder({"x": spec(2, 4), "q": spec(1, 2, 3, 4), "image": spec(2, 3, 8, 8)})
+    with pytest.raises(GraphError, match="does not end"):
+        b.add("ln", "layer_norm", ("x",), normalized_shape=(5,), eps=1e-5)
+    with pytest.raises(GraphError, match="rank-4"):
+        b.add("attn", "sdpa", ("q", "q", "x"), is_causal=True)
+    b.constant("bad_conv", torch.ones(4, 2, 3, 3))
+    with pytest.raises(GraphError, match="channels/groups"):
+        b.add(
+            "conv",
+            "conv2d",
+            ("image", "bad_conv"),
+            stride=1,
+            padding=0,
+            dilation=1,
+            groups=1,
+        )
+    b.constant("emb_w", torch.ones(5, 3))
+    with pytest.raises(GraphError, match="int64"):
+        b.add("emb", "embedding", ("x", "emb_w"))

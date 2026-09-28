@@ -78,10 +78,61 @@ def test_dynamic_dims_rejected_without_examples():
 
 
 def test_unsupported_op_rejected():
-    nodes = [helper.make_node("Conv", ["x", "w"], ["y"])]
+    nodes = [helper.make_node("ConvTranspose", ["x", "w"], ["y"])]
     w = numpy_helper.from_array(np.zeros((1, 1, 3, 3), dtype=np.float32), "w")
-    m = make_model(nodes, [vi("x", [1, 1, 5, 5])], [vi("y", [1, 1, 3, 3])], [w])
-    with pytest.raises(UnsupportedOperator, match="Conv"):
+    m = make_model(nodes, [vi("x", [1, 1, 5, 5])], [vi("y", [1, 1, 7, 7])], [w])
+    with pytest.raises(UnsupportedOperator, match="ConvTranspose"):
+        from_onnx(m)
+
+
+def test_conv_layer_norm_gather_parity():
+    image = np.random.randn(1, 3, 5, 5).astype(np.float32)
+    weights = np.random.randn(4, 3, 4, 4).astype(np.float32)
+    scale = np.random.randn(4).astype(np.float32)
+    bias = np.random.randn(4).astype(np.float32)
+    table = np.random.randn(8, 4).astype(np.float32)
+    indices = np.array([0, 1, 2, 3], dtype=np.int64)
+    reshape = np.array([4, 4], dtype=np.int64)
+    initializers = [
+        numpy_helper.from_array(weights, "weights"),
+        numpy_helper.from_array(scale, "scale"),
+        numpy_helper.from_array(bias, "bias"),
+        numpy_helper.from_array(table, "table"),
+        numpy_helper.from_array(indices, "indices"),
+        numpy_helper.from_array(reshape, "target_shape"),
+    ]
+    nodes = [
+        helper.make_node("Conv", ["image", "weights"], ["features"]),
+        helper.make_node("Reshape", ["features", "target_shape"], ["pooled"]),
+        helper.make_node(
+            "LayerNormalization",
+            ["pooled", "scale", "bias"],
+            ["visual"],
+            axis=-1,
+            epsilon=1e-5,
+        ),
+        helper.make_node("Gather", ["table", "indices"], ["text"], axis=0),
+        helper.make_node("Add", ["visual", "text"], ["y"]),
+    ]
+    m = make_model(nodes, [vi("image", [1, 3, 5, 5])], [vi("y", [4, 4])], initializers)
+    c = compile(from_onnx(m))
+    x = torch.from_numpy(image)
+    features = torch.nn.functional.conv2d(x, torch.from_numpy(weights))
+    visual = torch.nn.functional.layer_norm(
+        features.reshape(4, 4), (4,), torch.from_numpy(scale), torch.from_numpy(bias)
+    )
+    expected = visual + torch.nn.functional.embedding(
+        torch.from_numpy(indices), torch.from_numpy(table)
+    )
+    torch.testing.assert_close(c(x), expected)
+
+
+def test_onnx_gather_nonzero_axis_rejected():
+    table = numpy_helper.from_array(np.eye(4, dtype=np.float32), "table")
+    indices = numpy_helper.from_array(np.array([[0, 1]], dtype=np.int64), "indices")
+    nodes = [helper.make_node("Gather", ["table", "indices"], ["y"], axis=1)]
+    m = make_model(nodes, [], [vi("y", [1, 2, 4])], [table, indices])
+    with pytest.raises(UnsupportedOperator, match="axis=0"):
         from_onnx(m)
 
 

@@ -13,6 +13,10 @@ SUPPORTED_OPS = {
     "transpose",
     "softmax",
     "fused_linear_gelu",
+    "layer_norm",
+    "sdpa",
+    "conv2d",
+    "embedding",
 }
 
 
@@ -36,4 +40,32 @@ def evaluate(op: str, args: tuple[torch.Tensor, ...], attrs: dict) -> torch.Tens
     if op == "fused_linear_gelu":
         out = torch.add(torch.matmul(args[0], args[1]), args[2])
         return F.gelu(out, approximate=attrs.get("approximate", "none"))
+    if op == "layer_norm":
+        weight = args[1] if len(args) == 3 else None
+        bias = args[2] if len(args) == 3 else None
+        normalized = attrs["normalized_shape"]
+        if isinstance(normalized, int):
+            normalized = (normalized,)
+        return F.layer_norm(args[0], tuple(normalized), weight, bias, attrs["eps"])
+    if op == "sdpa":
+        return F.scaled_dot_product_attention(
+            args[0],
+            args[1],
+            args[2],
+            dropout_p=0.0,
+            is_causal=attrs["is_causal"],
+            scale=attrs.get("scale"),
+        )
+    if op == "conv2d":
+        return F.conv2d(
+            args[0],
+            args[1],
+            args[2] if len(args) == 3 else None,
+            stride=attrs["stride"],
+            padding=attrs["padding"],
+            dilation=attrs["dilation"],
+            groups=attrs["groups"],
+        )
+    if op == "embedding":
+        return F.embedding(args[0], args[1])
     raise ValueError(f"unsupported op {op!r}")

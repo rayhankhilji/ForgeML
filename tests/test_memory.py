@@ -30,6 +30,21 @@ def test_chain_reuses_slot_with_strict_nonoverlap():
                 assert lo > hi or (slots[i][2] < slots[j][1] or slots[j][2] < slots[i][1])
 
 
+def test_view_like_values_extend_source_lifetime_without_new_slot():
+    b = GraphBuilder({"x": spec(8), "z": spec(2, 4)})
+    b.add("a", "relu", ("x",))
+    b.add("r", "reshape", ("a",), shape=(2, 4))
+    b.add("c", "relu", ("z",))
+    b.add("y", "add", ("r", "c"))
+    g = b.finish(("y",))
+    plan = plan_memory(g)
+    assert plan.aliases == {"r": "a"}
+    assert set(plan.allocations) == {"a", "c"}
+    assert plan.allocations["a"].last == 3
+    assert plan.allocations["a"].slot != plan.allocations["c"].slot
+    assert plan.planned_bytes == 2 * 8 * 4
+
+
 def test_naive_and_planned_bytes():
     b = GraphBuilder({"x": spec(8), "z": spec(8)})
     b.add("a", "relu", ("x",))

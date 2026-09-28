@@ -5,10 +5,11 @@ from dataclasses import asdict, dataclass, field
 import torch
 
 from forgeml import kernels
+from forgeml.analysis import graph_analysis
 from forgeml.frontend import from_torch
 from forgeml.ir import Graph, GraphError
 from forgeml.kernels import DEFAULT_CONFIG, KernelConfig
-from forgeml.memory import MemoryPlan, plan_memory
+from forgeml.memory import VIEW_LIKE_OPS, MemoryPlan, plan_memory
 from forgeml.ops import evaluate
 from forgeml.passes import PassRecord
 from forgeml.passes import optimize as optimize_graph
@@ -71,6 +72,10 @@ class CompiledModel:
                         values[node.name] = self._run_triton(node, args, None)
                     else:
                         values[node.name] = evaluate(node.op, args, node.attrs).clone()
+                elif node.op in VIEW_LIKE_OPS:
+                    if use_triton:
+                        raise GraphError(f"no triton kernel for op {node.op!r}")
+                    values[node.name] = evaluate(node.op, args, node.attrs)
                 else:
                     alloc = plan.allocations[node.name]
                     view = slots[alloc.slot][: alloc.size_bytes // node.spec.dtype.itemsize]
@@ -118,6 +123,8 @@ class CompiledModel:
         raise GraphError(f"no triton kernel for op {node.op!r}")
 
     def explain(self) -> dict:
+        analysis = graph_analysis(self.graph)
+        original_analysis = graph_analysis(self.original_graph)
         return {
             "backend": self.backend,
             "original_nodes": len(self.original_graph.nodes),
@@ -134,6 +141,16 @@ class CompiledModel:
             "graph": self.graph.to_dict(),
             "kernel_plan": dict(self.kernel_plan),
             "kernel_configs": {k: asdict(v) for k, v in self.kernel_configs.items()},
+            "analysis": analysis,
+            "original_analysis": original_analysis,
+            "optimization_delta": {
+                "nodes": len(self.original_graph.nodes) - len(self.graph.nodes),
+                "flops": original_analysis["flops"] - analysis["flops"],
+                "logical_bytes": original_analysis["logical_bytes"] - analysis["logical_bytes"],
+                "critical_path_ops": original_analysis["critical_path_ops"]
+                - analysis["critical_path_ops"],
+                "planned_bytes": self.memory_plan.naive_bytes - self.memory_plan.planned_bytes,
+            },
         }
 
 

@@ -24,10 +24,14 @@ def test_memory_reconstruction_requires_identical_accounting_scope():
     spec = {"shape": [4], "dtype": "float32", "device": "cpu"}
     explanation = {
         "graph": {
-            "nodes": [{"name": "a", "spec": spec}, {"name": "out", "spec": spec}],
+            "nodes": [
+                {"name": "a", "op": "relu", "inputs": ["x"], "spec": spec},
+                {"name": "out", "op": "relu", "inputs": ["a"], "spec": spec},
+            ],
             "outputs": ["out"],
         },
         "memory_plan": {
+            "aliases": {},
             "naive_bytes": 16,
             "planned_bytes": 16,
             "slot_specs": {"0": spec},
@@ -40,13 +44,14 @@ def test_memory_reconstruction_requires_identical_accounting_scope():
     with pytest.raises(ValueError, match="totals"):
         validate_memory_plan(wrong)
     overlap = copy.deepcopy(explanation)
-    overlap["graph"]["nodes"].insert(1, {"name": "b", "spec": spec})
+    overlap["graph"]["nodes"].insert(1, {"name": "b", "op": "relu", "inputs": ["x"], "spec": spec})
     overlap["memory_plan"]["naive_bytes"] = 32
+    overlap["memory_plan"]["allocations"]["a"]["last"] = 2
     overlap["memory_plan"]["allocations"]["b"] = {
         "slot": 0,
         "size_bytes": 16,
         "first": 1,
-        "last": 2,
+        "last": 1,
     }
     with pytest.raises(ValueError, match="overlapping"):
         validate_memory_plan(overlap)

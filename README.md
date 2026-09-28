@@ -8,7 +8,7 @@
 
 ForgeML is an executable systems project, not a wrapper around `torch.compile`. It implements its own graph representation, importers, transformation passes, scheduling heuristic, memory planner, kernel dispatch, and tuning loop. Nebula implements the complementary runtime problems: model partitioning, collective communication, autoregressive state, request admission, batching, and failures.
 
-The two packages share a repository and measurement utilities. **Nebula is not secretly compiled by ForgeML:** its attention and distributed execution currently use PyTorch directly. ForgeML's supported compiler language is intentionally smaller than a complete transformer.
+The two packages share a repository and measurement utilities. **Nebula is not secretly compiled by ForgeML:** its attention and distributed execution currently use PyTorch directly. ForgeML now supports a deliberately static transformer/vision subset—LayerNorm, rank-4 scaled dot-product attention, Conv2d, embedding lookup, and the linear/activation/layout operators around them—but it is not a general pretrained-model compiler.
 
 > **Evidence boundary.** CPU compiler measurements are checked in with raw samples and a source commit. Modern Linux dependency installation, correctness tests, and packaging run in GitHub Actions. CUDA/Triton and NCCL code is hardware-gated and has not been validated on NVIDIA hardware in this build environment. No GPU speedup, multi-GPU scaling result, production-readiness claim, or comparison with NVIDIA products is implied.
 
@@ -127,9 +127,11 @@ flowchart TD
     IR --> DCE[Dead-node elimination]
     DCE --> CF[Bounded constant folding]
     CF --> CLEAN[Dead-node elimination]
-    CLEAN --> FUSE[MatMul + Bias + GELU fusion]
-    FUSE --> SCHED[Deterministic ready-list scheduling]
-    SCHED --> MEM[Liveness analysis / best-fit reusable slots]
+    CLEAN --> ALG[Algebraic simplification]
+    ALG --> CSE[Common-subexpression elimination]
+    CSE --> FUSE[MatMul + Bias + GELU fusion]
+    FUSE --> SCHED[Cost-evaluated deterministic scheduling]
+    SCHED --> MEM[View-aware liveness / reusable slots]
     MEM --> SELECT[Per-node kernel selection]
     SELECT --> TORCH[PyTorch reference executor]
     SELECT --> TRITON[Tiled Triton JIT specialization]
@@ -146,6 +148,8 @@ flowchart TD
 | Execution | `src/forgeml/compiler.py` | Input guards, slot allocation, dispatch, output ownership |
 | GPU | `src/forgeml/kernels.py`, `_triton.py` | Kernel eligibility, tiled GEMM and fused epilogues |
 | Tuning | `src/forgeml/autotune.py` | Correctness-gated candidate timing and per-instance selection |
+| Neural workloads | `src/forgeml/neural.py` | Static transformer block and vision/text fusion benchmark models |
+| Graph analysis | `src/forgeml/analysis.py` | Operator counts, FLOP/traffic bounds, intensity, critical path |
 | Distributed inference | `src/nebula/` | Decoder sharding, command protocol, caches, batching, routing |
 | Measurement | `measurement.py`, compiler/runtime benchmark modules | Raw samples, provenance, correctness gates, scaling definitions |
 
@@ -166,25 +170,53 @@ For each node, spec inference runs the whitelisted operation on meta tensors and
 | Add / multiply | Broadcasting; scalar operands; no in-place mutation or `out=` import |
 | ReLU | Non-in-place only |
 | GELU | Exact `none` or `tanh` approximation |
-| Reshape / view | Static dimensions; one inferable `-1` |
+| LayerNorm | Static trailing `normalized_shape`; paired affine tensors or no affine terms |
+| Scaled dot-product attention | Rank-4 `[batch, heads, sequence, head_dim]` Q/K/V; inference-only; no mask, dropout, or GQA |
+| Conv2d | NCHW input, OIHW weight, optional bias; static stride/padding/dilation/groups; zero padding only |
+| Embedding | Int64 indices and rank-2 `[vocab, dim]` table; training-only module options rejected |
+| Reshape / view | Static dimensions; one inferable `-1`; planned as a borrowed view |
 | Transpose / `t()` | Dimension swap; `t()` restricted to rank 2 |
 | Softmax | Explicit static axis; dtype override rejected |
+| Static value construction | Literal `torch.arange`, tensor `shape`/`ndim`/`device`/`dtype`, and static integer arithmetic used to resolve compile-time layout |
 | Outputs | One tensor or a flat tensor tuple |
 | ONNX | Default domain, opsets 13–22; Gelu requires 20+ |
 
-ONNX additionally supports `Gemm` alpha/beta/transposition lowering, `Constant`, and `Identity`. ONNX transpose is restricted to identity or a single dimension swap. Reshape needs a constant int64 shape and `allowzero=0`; zeros copy corresponding input dimensions. Unsupported operations fail explicitly instead of being silently executed through an opaque fallback importer.
+ONNX additionally supports `Gemm` alpha/beta/transposition lowering, `Constant`, `Identity`, rank-2 `Conv`, `LayerNormalization`, and axis-0 `Gather` as embedding lookup. ONNX transpose is restricted to identity or a single dimension swap. Reshape needs a constant int64 shape and `allowzero=0`; zeros copy corresponding input dimensions. Unsupported operations fail explicitly instead of being silently executed through an opaque fallback importer.
 
-**Not supported:** training, gradients through compiled execution, dynamic control flow, general dynamic shapes, convolution, arbitrary Python side effects, nested output structures, arbitrary ONNX domains, or a general transformer operator set. FX tracing executes Python from the supplied module: compile only trusted Python models.
+**Not supported:** training, gradients through compiled execution, dynamic control flow, general dynamic shapes, nonzero-padding Conv2d modes, attention masks/dropout/GQA, sparse or normalizing embedding variants, arbitrary Python side effects, nested output structures, arbitrary ONNX domains, or pretrained-model loading. FX tracing executes Python from the supplied module: compile only trusted Python models.
 
-### 2. Dead-node elimination and constant folding
+### 2. Algebraic cleanup, constant folding, and CSE
 
 Dead-node elimination starts at observable graph outputs and traverses producer dependencies backward. Unreachable operators and constants are discarded; the public input signature is retained.
 
 Constant folding evaluates a pure node only when all its operands are known constants. The predicted result must fit a **64 MiB per-result folding budget**, checked before allocation. This is a per-result bound, not a total compiler-memory sandbox.
 
+The algebraic pass removes identity reshapes and adjacent inverse transposes while preserving use-def ordering. Common-subexpression elimination hashes `(op, resolved inputs, frozen attrs, output spec)` and aliases duplicate pure computations to their first producer. These are intentionally conservative local rewrites—not symbolic algebra, layout propagation, or a proof engine.
+
 For a graph $G=(V,E)$, backward reachability is $O(|V|+|E|)$. Tensor evaluation and snapshot copying add costs proportional to the actual operations and tensor bytes; the Python compiler is intentionally not a zero-copy production frontend.
 
-### 3. Semantics-preserving epilogue fusion
+### 3. Static transformer and multimodal lowering
+
+The supported transformer fragment is intentionally explicit rather than pretending to solve automatic model import. A pre-normalized attention block lowers as:
+
+```text
+x ── LayerNorm ── reshape ── Q/K/V Linear ── reshape ── transpose ── SDPA(causal)
+ │                                                        │
+ └────────────────────── residual add ◀── reshape ◀── O Linear ◀── transpose
+ │
+ └── LayerNorm ── Linear ── GELU ── Linear ── reshape ── residual add
+```
+
+The IR keeps normalization, projection, layout, attention, activation, and residual nodes separate so each transformation remains inspectable. `TransformerBlock` in `src/forgeml/neural.py` compiles a static batch/sequence causal block. `MultimodalFusion` compiles a two-input network containing an NCHW convolutional path, an embedding/LayerNorm text path, additive late fusion, and a GELU classification head.
+
+Attention is modeled as
+
+$$\operatorname{SDPA}(Q,K,V)=
+\operatorname{softmax}\left(s\,QK^\top\right)V,$$
+
+with static rank-4 tensors, equal K/V sequence shapes, optional `is_causal`, and an optional positive scale override. This bounded semantics catches invalid ranks, mixed head counts, incompatible key/value lengths, non-finite scales, and unsupported masking early; it is not FlashAttention, paged attention, variable-length batching, RoPE, ALiBi, or general `nn.MultiheadAttention` import.
+
+### 4. Semantics-preserving epilogue fusion
 
 ```mermaid
 flowchart LR
@@ -210,21 +242,23 @@ Both eliminated intermediates must have exactly one consumer and must not be gra
 
 On the Torch backend this is **graph fusion, not one CPU kernel**. On the Triton path, the tile accumulator, bias addition, and activation are handled within one kernel invocation. Thus graph simplification and hardware fusion are different claims.
 
-### 4. Operator scheduling
+### 5. Cost-model-guided operator scheduling
 
-A deterministic topological ready list prioritizes operations using
+The primary ready-list priority uses
 
-$$\operatorname{score}(v)=\operatorname{bytesFreedByLastUses}(v)-\operatorname{bytesProduced}(v).$$
+$$\operatorname{score}(v)=\operatorname{bytesFreedByLastUses}(v)-\operatorname{bytesProduced}(v),$$
 
-Only intermediate values whose remaining consumer count reaches zero contribute to freed bytes. Inputs, constants, and observable outputs are not counted as released storage. Original graph order breaks ties.
+plus deterministic variants with different production-cost weights and branch-order policies. Each candidate produces a valid topological order; ForgeML then instantiates the same view-aware memory planner used by execution and chooses the candidate with the lowest `planned_bytes`. Ties use a deterministic node-name ordering. Only intermediate values whose remaining consumer count reaches zero contribute to freed bytes. Inputs, constants, and observable outputs are not counted as released storage.
 
-This heuristic is not an optimal-register-allocation solver or an asynchronous stream scheduler. The simple ready-list scan can take quadratic time in the number of nodes, which is acceptable for the miniature graphs targeted here.
+This is bounded local search, not an optimal register allocator, modulo scheduler, or asynchronous stream scheduler. Candidate enumeration and validation can take quadratic or worse time on very large graphs, which is acceptable for the miniature models targeted here and should be bounded before supporting production-scale IR.
 
-### 5. Lifetime-based activation reuse
+### 6. Lifetime-based activation reuse
 
-An intermediate $v$ has a closed live interval
+A materialized intermediate $v$ has a closed live interval
 
 $$I_v=[\operatorname{produce}(v),\operatorname{lastUse}(v)].$$
+
+`reshape` nodes are planned as borrowed views rather than fresh physical buffers. If a producer is consumed by a view, its physical last use is recursively extended to the view's last materialized consumer; otherwise a later node could overwrite storage while the view is still alive. Transposes remain materialized because attention and GEMM kernels often benefit from contiguous operands.
 
 A slot can be reassigned only when
 
@@ -243,6 +277,18 @@ flowchart LR
 `MemoryPlan.naive_bytes` sums distinct **internal intermediate** buffers. `planned_bytes` sums reusable slot capacities over the same scope. Neither includes inputs, constants, graph outputs, PyTorch scratch tensors, CUDA allocator fragmentation, or the compiler's weight snapshots. These are plan statistics, **not measured peak RSS or VRAM**.
 
 Execution uses a fresh slot arena per invocation. Output views are materialized before an underlying slot can be reused. Returned tensors do not borrow mutable scratch storage. This trades some copying and allocation overhead for a simple, explicit ownership contract.
+
+### 7. Static cost analysis and optimization deltas
+
+`compiled.explain()["analysis"]` reports a transparent static cost model, not hardware counters. For each node it records operation kind, output shape, estimated FLOPs, unique input bytes plus output bytes, arithmetic intensity, and producer-consumer depth. The graph summary reports operator counts, aggregate model bounds, input/constant/output bytes, critical-path operation depth, and the five largest modeled contributors.
+
+For an $M\times K$ by $K\times N$ matmul the model uses $2MKN$ FLOPs. NCHW convolution uses two FLOPs per output multiply-accumulate plus one per bias-add element. Attention uses
+
+$$2BHQK(2d_h)+5BHQK$$
+
+for full attention, replacing the $QK$ pair count with the triangular causal count when `is_causal` is enabled. Elementwise and normalization operations use small fixed operation estimates. These are roofline-style accounting bounds; they do not model cache residency, vectorization, kernel occupancy, fusion effects, Python overhead, or allocator behavior.
+
+`optimization_delta` compares the optimized graph against the pre-pass graph for nodes, modeled FLOPs, modeled logical traffic, critical-path depth, and planned intermediate bytes. This makes it possible to distinguish a real graph-size/traffic reduction from a latency change caused by a different layout or schedule.
 
 ## Triton lowering and autotuning
 
@@ -413,12 +459,13 @@ Raw samples, plans, correctness tolerances, environment details, and a SHA-256-l
 ### Compiler
 
 ```bash
-forgeml benchmark --device cpu --backend torch --warmup 5 --repeats 25 --threads 1 --output artifacts/compiler-cpu.json
-forgeml benchmark --device cuda --backend triton --dtype float16 --autotune --warmup 10 --repeats 100 --output artifacts/compiler-gpu.json
-python -m forgeml.reporting artifacts/compiler-cpu.json --output-dir artifacts/figures
+forgeml benchmark --suite mlp --device cpu --backend torch --warmup 5 --repeats 25 --threads 1 --output artifacts/compiler-cpu.json
+forgeml benchmark --suite neural --device cpu --backend torch --warmup 5 --repeats 25 --threads 1 --output artifacts/neural-cpu.json
+forgeml benchmark --suite neural --device cuda --backend triton --dtype float16 --autotune --warmup 10 --repeats 100 --output artifacts/neural-gpu.json
+python -m forgeml.reporting artifacts/neural-cpu.json --output-dir artifacts/figures
 ```
 
-The compiler suite compares eager, unoptimized IR, and optimized IR on MLP and residual-MLP shapes. It reports raw sample arrays, median, linearly interpolated p95, compilation cost, correctness errors, kernel plans, and logical storage statistics. Autotuning itself is excluded from steady-state timings and reported separately.
+The `mlp` suite compares eager, unoptimized IR, and optimized IR on MLP and residual-MLP shapes. The `neural` suite runs a static pre-normalized transformer block and a static convolution+embedding fusion model. Both report raw sample arrays, median, linearly interpolated p95, compilation cost, correctness errors, kernel plans, static cost analysis, and logical storage statistics. Autotuning itself is excluded from steady-state timings and reported separately.
 
 Numerical gates use `(rtol, atol)` of `(1e-4, 1e-4)` for FP32, `(1e-2, 1e-2)` for FP16, and `(5e-2, 5e-2)` for BF16. Non-finite outputs fail. These are small-workload validation tolerances, not formal floating-point error bounds.
 
@@ -499,18 +546,20 @@ Tests cover IR rejection paths, FX/ONNX lowering, exact and approximate activati
 
 | Area | Implemented scope | Not claimed |
 |---|---|---|
-| Compiler | Static typed DAG and explicit small operator set | General PyTorch compatibility or a mature optimizing compiler |
+| Compiler | Static typed DAG and bounded neural operator set | General PyTorch compatibility, dynamic graphs, or a mature optimizing compiler |
+| Attention/vision | Rank-4 inference SDPA, NCHW Conv2d, int64 embedding lookup | Masks, dropout attention, GQA/MQA variants, nonzero padding modes, paged/flash attention, pretrained checkpoints |
 | GPU codegen | Tiled GEMM / fused bias-GELU Triton template | Handwritten CUDA, arbitrary graph-to-one-kernel fusion, or cuBLAS superiority |
-| Memory | Per-call intermediate-slot reuse | Whole-process peak-memory reduction or zero allocation |
+| Memory | View-aware per-call intermediate-slot reuse | Whole-process peak-memory reduction or zero allocation |
+| Graph analysis | Static FLOP/traffic/intensity/critical-path accounting | Measured hardware counters or roofline predictions |
 | Autotuning | Four correctness-gated candidates per compiled instance | Global optimality or a portable persisted tuning database |
-| Model | Small deterministic causal decoder | Pretrained LLM quality or Hugging Face checkpoint loading |
+| Model | Small deterministic decoder plus static compiler workloads | Pretrained LLM/multimodal quality or Hugging Face checkpoint loading |
 | Parallelism | TP collectives and blocking PP partitioning | Overlapped pipeline throughput, elastic resizing, or automatic placement |
 | KV cache | Per-request, per-rank contiguous storage | Paged attention, prefix caching, cache transfer, or speculative decoding |
 | Serving | Bounded in-process batching and replica selection | Public HTTP service, authentication, multi-tenant isolation, or continuous batching |
 | Failure handling | Explicit failure, cleanup, bounded communication waits | Transparent recovery of partially executed requests |
 | Results | Raw CPU compiler capture and reproducible GPU commands | Invented GPU timing or unmeasured scaling efficiency |
 
-The next substantive extensions would be symbolic shape constraints, a richer attention-capable IR, cost-model-guided fusion, CUDA graph capture, paged KV storage, pipeline microbatch overlap, vocabulary parallelism, and controlled GPU measurements. Each should add an executable contract and a regression test before a performance claim.
+The next substantive extensions would be symbolic shape constraints, attention masks and GQA/MQA forms, layout-aware fusion, CUDA graph capture, paged KV storage, pipeline microbatch overlap, vocabulary parallelism, and controlled GPU measurements. Each should add an executable contract and a regression test before a performance claim.
 
 ### Reading and contributing
 

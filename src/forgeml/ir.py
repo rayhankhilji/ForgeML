@@ -94,6 +94,10 @@ def _check_attrs(op: str, attrs: dict[str, Any], arity: int) -> None:
         "transpose": {"dim0", "dim1"},
         "softmax": {"dim"},
         "fused_linear_gelu": {"approximate"},
+        "layer_norm": {"normalized_shape", "eps"},
+        "sdpa": {"is_causal", "scale"},
+        "conv2d": {"stride", "padding", "dilation", "groups"},
+        "embedding": set(),
     }[op]
     extra = set(attrs) - allowed
     if extra:
@@ -102,10 +106,31 @@ def _check_attrs(op: str, attrs: dict[str, Any], arity: int) -> None:
         "reshape": {"shape"},
         "transpose": {"dim0", "dim1"},
         "softmax": {"dim"},
+        "layer_norm": {"normalized_shape", "eps"},
+        "sdpa": {"is_causal"},
+        "conv2d": {"stride", "padding", "dilation", "groups"},
     }.get(op, set())
     missing = required - set(attrs)
     if missing:
         raise GraphError(f"op {op!r} requires attrs {sorted(missing)}")
+
+
+def _pair(value: Any, name: str, *, positive: bool) -> tuple[int, int]:
+    if isinstance(value, int) and not isinstance(value, bool):
+        pair = (value, value)
+    elif (
+        isinstance(value, (tuple, list))
+        and len(value) == 2
+        and all(isinstance(v, int) and not isinstance(v, bool) for v in value)
+    ):
+        pair = tuple(value)
+    else:
+        raise GraphError(f"conv2d {name} must be an int or pair of ints, got {value!r}")
+    minimum = 1 if positive else 0
+    if any(v < minimum for v in pair):
+        qualifier = "positive" if positive else "non-negative"
+        raise GraphError(f"conv2d {name} values must be {qualifier}, got {pair!r}")
+    return pair
 
 
 def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) -> TensorSpec:
@@ -113,18 +138,23 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
 
     _check_attrs(op, attrs, len(input_specs))
     expected_arity = {
-        "matmul": 2,
-        "add": 2,
-        "mul": 2,
-        "relu": 1,
-        "gelu": 1,
-        "reshape": 1,
-        "transpose": 1,
-        "softmax": 1,
-        "fused_linear_gelu": 3,
+        "matmul": (2,),
+        "add": (2,),
+        "mul": (2,),
+        "relu": (1,),
+        "gelu": (1,),
+        "reshape": (1,),
+        "transpose": (1,),
+        "softmax": (1,),
+        "fused_linear_gelu": (3,),
+        "layer_norm": (1, 3),
+        "sdpa": (3,),
+        "conv2d": (2, 3),
+        "embedding": (2,),
     }[op]
-    if len(input_specs) != expected_arity:
-        raise GraphError(f"op {op!r} expects {expected_arity} inputs, got {len(input_specs)}")
+    if len(input_specs) not in expected_arity:
+        choices = "/".join(str(v) for v in expected_arity)
+        raise GraphError(f"op {op!r} expects {choices} inputs, got {len(input_specs)}")
     if op == "matmul":
         a, b = input_specs
         if len(a.shape) != 2 or len(b.shape) != 2:
@@ -178,6 +208,84 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
             raise GraphError("fused_linear_gelu dtype mismatch")
         if attrs.get("approximate", "none") not in ("none", "tanh"):
             raise GraphError("fused_linear_gelu approximate must be 'none' or 'tanh'")
+    if op == "layer_norm":
+        x = input_specs[0]
+        normalized = attrs["normalized_shape"]
+        if isinstance(normalized, int) and not isinstance(normalized, bool):
+            normalized = (normalized,)
+        if (
+            not isinstance(normalized, (tuple, list))
+            or not normalized
+            or not all(isinstance(d, int) and not isinstance(d, bool) and d > 0 for d in normalized)
+        ):
+            raise GraphError(
+                f"layer_norm normalized_shape must be positive ints, got {normalized!r}"
+            )
+        normalized = tuple(normalized)
+        if len(x.shape) < len(normalized) or x.shape[-len(normalized) :] != normalized:
+            raise GraphError(f"layer_norm shape {x.shape} does not end with {normalized!r}")
+        if len(input_specs) == 3:
+            weight, bias = input_specs[1:]
+            if weight.shape != normalized or bias.shape != normalized:
+                raise GraphError("layer_norm weight/bias must match normalized_shape")
+            if not (x.dtype == weight.dtype == bias.dtype):
+                raise GraphError("layer_norm dtype mismatch")
+        eps = attrs["eps"]
+        if (
+            not isinstance(eps, (int, float))
+            or isinstance(eps, bool)
+            or not math.isfinite(float(eps))
+            or float(eps) <= 0
+        ):
+            raise GraphError("layer_norm eps must be a finite positive number")
+    if op == "sdpa":
+        q, k, v = input_specs
+        if not (len(q.shape) == len(k.shape) == len(v.shape) == 4):
+            raise GraphError("sdpa requires rank-4 [batch, heads, sequence, dim] tensors")
+        if q.shape[0:2] != k.shape[0:2] or k.shape != v.shape or q.shape[3] != k.shape[3]:
+            raise GraphError("sdpa batch/head/key-value shapes are incompatible")
+        if not (q.dtype == k.dtype == v.dtype):
+            raise GraphError("sdpa dtype mismatch")
+        if not isinstance(attrs["is_causal"], bool):
+            raise GraphError("sdpa is_causal must be a bool")
+        scale = attrs.get("scale")
+        if scale is not None and (
+            not isinstance(scale, (int, float))
+            or isinstance(scale, bool)
+            or not math.isfinite(float(scale))
+            or float(scale) <= 0
+        ):
+            raise GraphError("sdpa scale must be a finite positive number or None")
+    if op == "conv2d":
+        x, weight = input_specs[:2]
+        if len(x.shape) != 4 or len(weight.shape) != 4:
+            raise GraphError("conv2d requires NCHW input and OIHW weight tensors")
+        groups = attrs["groups"]
+        if not isinstance(groups, int) or isinstance(groups, bool) or groups <= 0:
+            raise GraphError("conv2d groups must be a positive integer")
+        if (
+            x.shape[1] % groups
+            or weight.shape[0] % groups
+            or x.shape[1] != weight.shape[1] * groups
+        ):
+            raise GraphError("conv2d channels/groups are incompatible")
+        if len(input_specs) == 3:
+            bias = input_specs[2]
+            if len(bias.shape) != 1 or bias.shape[0] != weight.shape[0]:
+                raise GraphError("conv2d bias must be a 1-D tensor of output channels")
+            if bias.dtype != x.dtype:
+                raise GraphError("conv2d bias dtype mismatch")
+        if x.dtype != weight.dtype:
+            raise GraphError("conv2d dtype mismatch")
+        _pair(attrs["stride"], "stride", positive=True)
+        _pair(attrs["padding"], "padding", positive=False)
+        _pair(attrs["dilation"], "dilation", positive=True)
+    if op == "embedding":
+        indices, weight = input_specs
+        if indices.dtype != torch.int64:
+            raise GraphError("embedding indices must be int64")
+        if len(weight.shape) != 2:
+            raise GraphError("embedding weight must be rank-2 [vocab, dim]")
     try:
         out = evaluate(op, tuple(_meta_tensor(s) for s in input_specs), dict(attrs))
     except GraphError:

@@ -36,8 +36,43 @@ def validate_memory_plan(explanation: dict) -> None:
     planned = sum(_bytes(spec) for spec in plan["slot_specs"].values())
     if naive != plan["naive_bytes"] or planned != plan["planned_bytes"]:
         raise ValueError("memory totals do not agree with the recorded IR and slots")
-    if set(plan["allocations"]) != set(internal):
-        raise ValueError("memory plan must cover exactly the intermediate values")
+    aliases = plan.get("aliases", {})
+    view_ops = {"reshape"}
+    index = {node["name"]: i for i, node in enumerate(graph["nodes"])}
+    by_name = {node["name"]: node for node in graph["nodes"]}
+    consumers: dict[str, list[str]] = {}
+    for node in graph["nodes"]:
+        for source in set(node["inputs"]):
+            if source in index:
+                consumers.setdefault(source, []).append(node["name"])
+    memo: dict[str, int] = {}
+
+    def logical_last(name: str) -> int:
+        if name in memo:
+            return memo[name]
+        last = index[name]
+        for consumer_name in consumers.get(name, ()):
+            consumer = by_name[consumer_name]
+            contribution = (
+                logical_last(consumer_name) if consumer["op"] in view_ops else index[consumer_name]
+            )
+            last = max(last, contribution)
+        memo[name] = last
+        return last
+
+    for name, source in aliases.items():
+        node = internal.get(name)
+        if node is None or node["op"] not in view_ops or len(node["inputs"]) != 1:
+            raise ValueError("memory aliases must be internal view-like nodes")
+        if source != node["inputs"][0]:
+            raise ValueError("memory alias does not match its producer")
+        if source in plan["allocations"] and plan["allocations"][source]["last"] < logical_last(
+            name
+        ):
+            raise ValueError("aliased storage ends before its last view consumer")
+    materialized = set(internal) - set(aliases)
+    if set(plan["allocations"]) != materialized:
+        raise ValueError("memory plan must cover exactly the materialized intermediate values")
     slots: dict[int, list[tuple[int, int]]] = {}
     for name, allocation in plan["allocations"].items():
         size = _bytes(internal[name]["spec"])
@@ -45,8 +80,8 @@ def validate_memory_plan(explanation: dict) -> None:
         if allocation["size_bytes"] != size or size > capacity:
             raise ValueError("invalid slot capacity")
         interval = (allocation["first"], allocation["last"])
-        if interval[0] > interval[1]:
-            raise ValueError("invalid lifetime")
+        if interval != (index[name], logical_last(name)):
+            raise ValueError("allocation interval does not match view-aware lifetimes")
         previous = slots.setdefault(allocation["slot"], [])
         if any(max(first, interval[0]) <= min(last, interval[1]) for first, last in previous):
             raise ValueError("overlapping live values share a slot")
@@ -54,8 +89,11 @@ def validate_memory_plan(explanation: dict) -> None:
 
 
 def compiler_summary(report: dict) -> list[dict]:
-    if report.get("suite") != "forgeml.compiler" or report.get("measured") is not True:
-        raise ValueError("a measured compiler report is required")
+    if (
+        report.get("suite") not in ("forgeml.compiler", "forgeml.neural")
+        or report.get("measured") is not True
+    ):
+        raise ValueError("a measured ForgeML compiler/neural report is required")
     rows = []
     for workload in report["workloads"]:
         for result in workload["correctness"].values():
@@ -79,24 +117,34 @@ def compiler_summary(report: dict) -> list[dict]:
             speedup, workload["timings"]["optimized"]["speedup_vs_eager"], rel_tol=1e-12
         ):
             raise ValueError("speedup disagrees with latency samples")
-        rows.append(
-            {
-                "name": workload["name"],
-                "eager_ms": eager,
-                "unoptimized_ms": timings["unoptimized"]["median_ms"],
-                "optimized_ms": optimized,
-                "optimized_p95_ms": timings["optimized"]["p95_ms"],
-                "speedup": speedup,
-                "original_nodes": workload["optimized"]["original_nodes"],
-                "optimized_nodes": workload["optimized"]["optimized_nodes"],
-                "unoptimized_naive_kib": workload["unoptimized"]["memory_plan"]["naive_bytes"]
-                / 1024,
-                "unoptimized_planned_kib": workload["unoptimized"]["memory_plan"]["planned_bytes"]
-                / 1024,
-                "optimized_planned_kib": workload["optimized"]["memory_plan"]["planned_bytes"]
-                / 1024,
-            }
-        )
+        row = {
+            "name": workload["name"],
+            "eager_ms": eager,
+            "unoptimized_ms": timings["unoptimized"]["median_ms"],
+            "optimized_ms": optimized,
+            "optimized_p95_ms": timings["optimized"]["p95_ms"],
+            "speedup": speedup,
+            "original_nodes": workload["optimized"]["original_nodes"],
+            "optimized_nodes": workload["optimized"]["optimized_nodes"],
+            "unoptimized_naive_kib": workload["unoptimized"]["memory_plan"]["naive_bytes"] / 1024,
+            "unoptimized_planned_kib": workload["unoptimized"]["memory_plan"]["planned_bytes"]
+            / 1024,
+            "optimized_planned_kib": workload["optimized"]["memory_plan"]["planned_bytes"] / 1024,
+        }
+        analysis = workload["optimized"].get("analysis")
+        if analysis is not None:
+            delta = workload["optimized"].get("optimization_delta", {})
+            row.update(
+                op_counts=analysis["op_counts"],
+                mflops=analysis["flops"] / 1_000_000,
+                logical_kib=analysis["logical_bytes"] / 1024,
+                arithmetic_intensity=analysis["arithmetic_intensity"],
+                critical_path_ops=analysis["critical_path_ops"],
+                delta_nodes=delta.get("nodes", 0),
+                delta_logical_kib=delta.get("logical_bytes", 0) / 1024,
+                delta_critical_path_ops=delta.get("critical_path_ops", 0),
+            )
+        rows.append(row)
     return rows
 
 
@@ -165,17 +213,18 @@ def main() -> None:
     device = env["device"].split(":")[0]
     if device not in ("cpu", "cuda"):
         raise ValueError("report device must be cpu or cuda")
+    prefix = "neural" if report["suite"] == "forgeml.neural" else "compiler"
     hardware = env.get("gpu_name", f"{env['machine']} {env['platform'].split('-')[0]}")
-    (destination / f"compiler-{device}.json").write_bytes(raw)
+    (destination / f"{prefix}-{device}.json").write_bytes(raw)
     write_report(
         {
             "source_sha256": hashlib.sha256(raw).hexdigest(),
             "environment": report["environment"],
             "rows": rows,
         },
-        destination / "compiler-summary.json",
+        destination / f"{prefix}-summary.json",
     )
-    (destination / "compiler-latency.svg").write_text(
+    (destination / f"{prefix}-latency.svg").write_text(
         bar_chart(
             rows,
             [
@@ -192,7 +241,7 @@ def main() -> None:
         ),
         encoding="utf-8",
     )
-    (destination / "compiler-memory.svg").write_text(
+    (destination / f"{prefix}-memory.svg").write_text(
         bar_chart(
             rows,
             [

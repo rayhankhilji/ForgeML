@@ -1,10 +1,12 @@
 import pytest
 import torch
+import torch.nn.functional as F
 from torch import nn
 
 from forgeml.compiler import compile
 from forgeml.frontend import UnsupportedOperator, from_torch
 from forgeml.ir import GraphError
+from forgeml.neural import MultimodalFusion, TransformerBlock
 
 
 class LinearOnly(nn.Module):
@@ -307,3 +309,83 @@ def test_scalar_int_promotion():
 
     g = parity(S(), torch.randn(4))
     assert g.nodes[0].spec.dtype == torch.float32
+
+
+def test_transformer_block_parity_and_shape_statics():
+    model = TransformerBlock(hidden_size=32, num_heads=4, intermediate_size=64)
+    x = torch.randn(2, 6, 32)
+    graph = parity(model, x)
+    ops = {node.op for node in graph.nodes}
+    assert {"layer_norm", "sdpa", "reshape", "transpose", "matmul"} <= ops
+
+
+def test_multimodal_fusion_parity():
+    model = MultimodalFusion(
+        batch_size=2,
+        image_size=8,
+        image_channels=3,
+        text_tokens=5,
+        vocab_size=20,
+        text_dim=8,
+        fusion_dim=16,
+        classes=4,
+    )
+    image = torch.randn(2, 3, 8, 8)
+    tokens = torch.randint(0, 20, (2, 5))
+    graph = parity(model, image, tokens)
+    ops = {node.op for node in graph.nodes}
+    assert {"conv2d", "embedding", "layer_norm", "add"} <= ops
+
+
+def test_static_arange_and_embedding():
+    class Positional(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.embedding = nn.Embedding(16, 4)
+            self.max_len = 5
+
+        def forward(self, x):
+            positions = torch.arange(self.max_len)
+            return self.embedding(positions) + x
+
+    parity(Positional(), torch.randn(2, 5, 4))
+
+
+def test_sdpa_rejects_dropout_and_mask():
+    class DropoutAttention(nn.Module):
+        def forward(self, q, k, v):
+            return F.scaled_dot_product_attention(q, k, v, dropout_p=0.2)
+
+    q = torch.randn(1, 2, 3, 4)
+    with pytest.raises(UnsupportedOperator, match="dropout"):
+        from_torch(DropoutAttention(), (q, q, q))
+
+    class MaskedAttention(nn.Module):
+        def forward(self, q, k, v):
+            return F.scaled_dot_product_attention(q, k, v, attn_mask=torch.ones(3, 3))
+
+    with pytest.raises(UnsupportedOperator, match="attn_mask"):
+        from_torch(MaskedAttention(), (q, q, q))
+
+
+def test_conv_and_embedding_option_rejections():
+    model = nn.Conv2d(3, 4, kernel_size=3, padding="same")
+    model.eval()
+    with pytest.raises(GraphError, match="padding"):
+        from_torch(model, (torch.randn(2, 3, 8, 8),))
+
+    model = nn.Conv2d(3, 4, kernel_size=3, padding=1, padding_mode="reflect")
+    model.eval()
+    with pytest.raises(UnsupportedOperator, match="padding_mode"):
+        from_torch(model, (torch.randn(2, 3, 8, 8),))
+
+    class EmbeddingModel(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.embedding = nn.Embedding(8, 4, padding_idx=0)
+
+        def forward(self, ids):
+            return self.embedding(ids)
+
+    with pytest.raises(UnsupportedOperator, match="Embedding options"):
+        from_torch(EmbeddingModel().eval(), (torch.ones(2, 3, dtype=torch.int64),))

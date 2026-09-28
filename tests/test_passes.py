@@ -2,11 +2,13 @@ import torch
 
 from forgeml.ir import GraphBuilder, TensorSpec
 from forgeml.passes import (
+    common_subexpression_elimination,
     eliminate_dead_nodes,
     fold_constants,
     fuse_linear_gelu,
     optimize,
     schedule,
+    simplify_algebra,
 )
 
 
@@ -109,6 +111,38 @@ def test_schedule_respects_dependencies_and_is_deterministic():
                 assert pos[i] < pos[n.name]
 
 
+def test_simplify_inverse_transposes_and_identity_reshape():
+    b = GraphBuilder({"x": spec(2, 4)})
+    b.add("t1", "transpose", ("x",), dim0=0, dim1=1)
+    b.add("t2", "transpose", ("t1",), dim0=0, dim1=1)
+    b.add("same", "reshape", ("t2",), shape=(2, 4))
+    b.add("y", "relu", ("same",))
+    out = simplify_algebra(b.finish(("y",)))
+    assert [n.op for n in out.nodes] == ["relu"]
+    assert out.nodes[0].inputs == ("x",)
+
+
+def test_common_subexpression_eliminates_duplicate_pure_nodes():
+    b = GraphBuilder({"x": spec(2, 4), "z": spec(2, 4)})
+    b.add("a", "add", ("x", "z"))
+    b.add("b", "add", ("x", "z"))
+    b.add("y", "mul", ("a", "b"))
+    g = b.finish(("y",))
+    out = common_subexpression_elimination(g)
+    assert [n.name for n in out.nodes] == ["a", "y"]
+    assert out.nodes[-1].inputs == ("a", "a")
+
+
+def test_cse_preserves_multiple_output_semantics():
+    b = GraphBuilder({"x": spec(2)})
+    b.add("a", "relu", ("x",))
+    b.add("b", "relu", ("x",))
+    g = b.finish(("a", "b"))
+    out = common_subexpression_elimination(g)
+    assert len(out.nodes) == 1
+    assert out.outputs == ("a", "a")
+
+
 def test_optimize_returns_records_and_preserves_original():
     g = _linear_gelu_graph()
     out, records = optimize(g)
@@ -116,7 +150,10 @@ def test_optimize_returns_records_and_preserves_original():
         "eliminate_dead_nodes",
         "fold_constants",
         "eliminate_dead_nodes",
+        "simplify_algebra",
+        "common_subexpression_elimination",
         "fuse_linear_gelu",
+        "eliminate_dead_nodes",
         "schedule",
     ]
     assert len(out.nodes) == 1
