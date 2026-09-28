@@ -4,6 +4,7 @@ import math
 from collections import Counter
 
 from forgeml.ir import Graph, Node, TensorSpec
+from forgeml.memory import VIEW_LIKE_OPS
 
 
 def _numel(spec: TensorSpec) -> int:
@@ -65,7 +66,9 @@ def graph_analysis(graph: Graph) -> dict:
         input_specs = [specs[name] for name in node.inputs]
         flops = _node_flops(node, input_specs)
         input_bytes = sum(specs[name].nbytes for name in dict.fromkeys(node.inputs))
-        logical_bytes = input_bytes + node.spec.nbytes
+        # View ops are pure metadata: they produce no new storage, so the real
+        # traffic is charged at their materializing consumers.
+        logical_bytes = 0 if node.op in VIEW_LIKE_OPS else input_bytes + node.spec.nbytes
         depth = 1 + max((depths.get(name, 0) for name in node.inputs), default=0)
         depths[node.name] = depth
         row = {
