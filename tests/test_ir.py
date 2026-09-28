@@ -270,3 +270,47 @@ def test_neural_operator_rejections():
     b.constant("emb_w", torch.ones(5, 3))
     with pytest.raises(GraphError, match="int64"):
         b.add("emb", "embedding", ("x", "emb_w"))
+
+
+def test_narrow_spec_and_bounds():
+    b = GraphBuilder({"x": spec(2, 8)})
+    b.add("n", "narrow", ("x",), dim=1, start=2, length=3)
+    g = b.finish(("n",))
+    assert g.specs()["n"].shape == (2, 3)
+    b2 = GraphBuilder({"x": spec(2, 8)})
+    b2.add("n", "narrow", ("x",), dim=-1, start=0, length=4)
+    assert b2.finish(("n",)).specs()["n"].shape == (2, 4)
+    with pytest.raises(GraphError, match="narrow range"):
+        b3 = GraphBuilder({"x": spec(2, 8)})
+        b3.add("n", "narrow", ("x",), dim=1, start=6, length=4)
+    with pytest.raises(GraphError, match="narrow dim"):
+        b4 = GraphBuilder({"x": spec(2, 8)})
+        b4.add("n", "narrow", ("x",), dim=2, start=0, length=1)
+    with pytest.raises(GraphError, match="narrow range"):
+        b5 = GraphBuilder({"x": spec(2, 8)})
+        b5.add("n", "narrow", ("x",), dim=1, start=0, length=0)
+
+
+def test_float_only_ops_reject_integer_inputs():
+    b = GraphBuilder({"x": TensorSpec((2, 4), torch.int64, "cpu")})
+    with pytest.raises(GraphError, match="floating-point"):
+        b.add("g", "gelu", ("x",))
+    with pytest.raises(GraphError, match="floating-point"):
+        b.add("s", "softmax", ("x",), dim=1)
+
+
+def test_node_attrs_must_be_dict():
+    g = Graph(
+        inputs={"x": spec(2)},
+        constants={},
+        nodes=[Node("y", "relu", ("x",), None, spec(2))],
+        outputs=("y",),
+    )
+    with pytest.raises(GraphError, match="attrs must be a dict"):
+        g.validate()
+
+
+def test_indexless_cuda_device_normalizes():
+    assert TensorSpec((2,), torch.float32, "cuda").device == "cuda:0"
+    assert TensorSpec((2,), torch.float32, "cuda:1").device == "cuda:1"
+    assert TensorSpec((2,), torch.float32, "cpu").device == "cpu"

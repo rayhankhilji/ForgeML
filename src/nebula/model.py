@@ -74,7 +74,7 @@ class TinyDecoder(nn.Module):
     def __init__(self, config: DecoderConfig):
         super().__init__()
         self.config = config
-        with torch.random.fork_rng(devices=[]):
+        with torch.random.fork_rng():
             torch.manual_seed(config.seed)
             self.token_embedding = nn.Embedding(config.vocab_size, config.hidden_size)
             self.position_embedding = nn.Embedding(config.max_seq_len, config.hidden_size)

@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 import contextlib
-import logging
+import hashlib
 import math
 import threading
+from dataclasses import asdict
 
 import torch
 import torch.distributed as dist
@@ -21,7 +22,6 @@ CMD_RELEASE = 2
 _GENERATE_ID_BASE = 1 << 62
 _MAX_REQUEST_ID = (1 << 62) - 1
 _DEFAULT_CONFIG = DecoderConfig()
-_LOG = logging.getLogger(__name__)
 
 
 class EngineFailed(RuntimeError):
@@ -224,17 +224,29 @@ class Engine:
         self.config = config
         self.context = context
         self.max_requests = max_requests
-        self.decoder = ShardedDecoder(config, context, dtype=dtype, max_requests=max_requests)
-        self._healthy = True
-        self._closed = False
-        self._lock = threading.RLock()
-        self._gen_counter = _GENERATE_ID_BASE
         if dist.is_available() and dist.is_initialized():
             self._comm_device = (
                 context.device if dist.get_backend() == "nccl" else torch.device("cpu")
             )
         else:
             self._comm_device = torch.device("cpu")
+        if self._world():
+            # Handshake: every rank must agree on model config, dtype, and
+            # request capacity before serving, otherwise collectives could
+            # silently combine mismatched shards.
+            digest = hashlib.sha256(
+                repr((asdict(config), str(dtype), max_requests)).encode()
+            ).digest()
+            expected = int.from_bytes(digest[:8], "little", signed=True)
+            wire = torch.tensor([expected], dtype=torch.int64, device=self._comm_device)
+            dist.broadcast(wire, src=0)
+            if int(wire.cpu().item()) != expected:
+                raise EngineFailed("engine configuration differs across ranks")
+        self.decoder = ShardedDecoder(config, context, dtype=dtype, max_requests=max_requests)
+        self._healthy = True
+        self._closed = False
+        self._lock = threading.RLock()
+        self._gen_counter = _GENERATE_ID_BASE
 
     @property
     def healthy(self) -> bool:
@@ -264,6 +276,8 @@ class Engine:
             raise ValueError("request_ids must match batch size")
         if tokens.shape[0] > self.max_requests:
             raise ValueError("batch exceeds max_requests")
+        if not isinstance(start_pos, int) or isinstance(start_pos, bool):
+            raise TypeError("start_pos must be an integer")
         if start_pos < 0 or start_pos + tokens.shape[1] > self.config.max_seq_len:
             raise ValueError("sequence exceeds max_seq_len")
         if len(set(request_ids)) != len(request_ids):
@@ -275,8 +289,6 @@ class Engine:
                 raise ValueError("request id exceeds int64 range")
             if r > _MAX_REQUEST_ID and not internal:
                 raise ValueError("request id exceeds manual range")
-        if not isinstance(start_pos, int) or isinstance(start_pos, bool):
-            raise TypeError("start_pos must be an integer")
         if (tokens < 0).any() or (tokens >= self.config.vocab_size).any():
             raise ValueError("token ids out of range")
 

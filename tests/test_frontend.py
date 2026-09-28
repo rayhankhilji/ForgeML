@@ -130,6 +130,27 @@ def test_root_linear_no_bias():
     torch.testing.assert_close(c(x), lin(x))
 
 
+def test_linear_preserves_leading_dimensions():
+    lin = nn.Linear(8, 4).eval()
+    x = torch.randn(2, 3, 8)
+    g = from_torch(lin, (x,))
+    assert [n.op for n in g.nodes] == ["reshape", "linear", "reshape"]
+    c = compile(lin, (x,))
+    torch.testing.assert_close(c(x), lin(x))
+
+
+def test_functional_linear_accepts_rank_one_input():
+    class FL(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.w = nn.Parameter(torch.randn(4, 8))
+
+        def forward(self, x):
+            return torch.nn.functional.linear(x, self.w)
+
+    parity(FL(), torch.randn(8))
+
+
 def test_functional_linear_bias_variants():
     class FL(nn.Module):
         def __init__(self):
@@ -390,3 +411,33 @@ def test_conv_and_embedding_option_rejections():
 
     with pytest.raises(UnsupportedOperator, match="Embedding options"):
         from_torch(EmbeddingModel().eval(), (torch.ones(2, 3, dtype=torch.int64),))
+
+
+def test_static_shape_output_rejected():
+    class ShapeOut(nn.Module):
+        def forward(self, x):
+            return x, x.shape
+
+    with pytest.raises((GraphError, UnsupportedOperator), match="produced tensors"):
+        from_torch(ShapeOut().eval(), (torch.randn(2, 4),))
+
+
+def test_flatten_out_of_range_dim_rejected():
+    class BadFlatten(nn.Module):
+        def forward(self, x):
+            return torch.flatten(x, start_dim=5)
+
+    with pytest.raises(GraphError, match="flatten"):
+        from_torch(BadFlatten().eval(), (torch.randn(2, 3, 4),))
+
+
+def test_mm_mat2_keyword_arg():
+    class MM(nn.Module):
+        def forward(self, x):
+            return torch.mm(x, mat2=self.w)
+
+        def __init__(self):
+            super().__init__()
+            self.w = nn.Parameter(torch.randn(4, 8))
+
+    parity(MM().eval(), torch.randn(2, 4))

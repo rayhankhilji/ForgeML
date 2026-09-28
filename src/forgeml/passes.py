@@ -4,8 +4,8 @@ from dataclasses import dataclass
 
 import torch
 
-from forgeml.ir import Graph, GraphError, Node
-from forgeml.memory import plan_memory
+from forgeml.ir import Graph, GraphError, Node, TensorSpec
+from forgeml.memory import VIEW_LIKE_OPS, plan_memory
 from forgeml.ops import evaluate
 
 _FOLD_LIMIT_BYTES = 64 * 1024 * 1024
@@ -48,7 +48,15 @@ def fold_constants(graph: Graph) -> Graph:
     env = dict(constants)
     for node in graph.nodes:
         if all(i in env for i in node.inputs):
-            if node.spec.nbytes > _FOLD_LIMIT_BYTES:
+            # The byte cap bounds compile-time memory; view ops are exempt
+            # because they materialize nothing, and input bytes are capped to
+            # bound fold compute on large operands.
+            input_bytes = sum(
+                env[i].numel() * env[i].element_size() for i in dict.fromkeys(node.inputs)
+            )
+            if node.op not in VIEW_LIKE_OPS and (
+                node.spec.nbytes > _FOLD_LIMIT_BYTES or input_bytes > _FOLD_LIMIT_BYTES
+            ):
                 nodes.append(node)
                 continue
             args = tuple(env[i] for i in node.inputs)
@@ -61,6 +69,8 @@ def fold_constants(graph: Graph) -> Graph:
             env[node.name] = result
             continue
         nodes.append(node)
+    used = {i for n in nodes for i in n.inputs} | set(graph.outputs)
+    constants = {k: v for k, v in constants.items() if k in used}
     return _rebuild(graph, nodes, constants)
 
 
@@ -81,13 +91,21 @@ def simplify_algebra(graph: Graph) -> Graph:
         if node.op == "reshape" and specs[node.inputs[0]].shape == node.spec.shape:
             aliases[node.name] = node.inputs[0]
             continue
+        if node.op == "reshape":
+            source = by_name.get(node.inputs[0])
+            if source is not None and source.op == "reshape":
+                node = Node(node.name, "reshape", source.inputs, dict(node.attrs), node.spec)
         if node.op == "transpose":
+            rank = len(node.spec.shape)
+            dims = frozenset((node.attrs["dim0"] % rank, node.attrs["dim1"] % rank))
+            if len(dims) == 1:
+                aliases[node.name] = node.inputs[0]
+                continue
             source = by_name.get(node.inputs[0])
             if (
                 source is not None
                 and source.op == "transpose"
-                and node.attrs["dim0"] == source.attrs["dim0"]
-                and node.attrs["dim1"] == source.attrs["dim1"]
+                and frozenset((source.attrs["dim0"] % rank, source.attrs["dim1"] % rank)) == dims
             ):
                 aliases[node.name] = _resolve(aliases, source.inputs[0])
                 continue
@@ -120,7 +138,8 @@ def common_subexpression_elimination(graph: Graph) -> Graph:
     nodes: list[Node] = []
     for node in graph.nodes:
         inputs = tuple(_resolve(aliases, i) for i in node.inputs)
-        key = (node.op, inputs, _freeze(node.attrs), node.spec)
+        key_inputs = tuple(sorted(inputs)) if node.op in ("add", "mul") else inputs
+        key = (node.op, key_inputs, _freeze(node.attrs), node.spec)
         if key in seen:
             aliases[node.name] = seen[key]
             continue
@@ -196,7 +215,7 @@ def fuse_linear_gelu(graph: Graph) -> Graph:
         producer = by_name.get(node.inputs[0])
         if (
             producer is not None
-            and producer.op == "linear"
+            and producer.op in ("linear", "matmul")
             and producer.name not in graph.outputs
             and len(consumers.get(producer.name, ())) == 1
         ):
@@ -246,6 +265,80 @@ def fuse_linear_gelu(graph: Graph) -> Graph:
     return _rebuild(graph, nodes, constants)
 
 
+def fuse_shared_projections(graph: Graph) -> Graph:
+    index = {n.name: i for i, n in enumerate(graph.nodes)}
+    specs = graph.specs()
+    groups: dict[tuple[str, int], list[Node]] = {}
+    for node in graph.nodes:
+        if node.op != "linear" or node.inputs[1] not in graph.constants:
+            continue
+        if len(node.inputs) == 3 and node.inputs[2] not in graph.constants:
+            continue
+        groups.setdefault((node.inputs[0], len(node.inputs)), []).append(node)
+    groups = {k: v for k, v in groups.items() if len(v) >= 2}
+    if not groups:
+        return _rebuild(graph, list(graph.nodes), dict(graph.constants))
+    taken = set(graph.inputs) | set(graph.constants) | set(index)
+    constants = dict(graph.constants)
+    counter = 0
+
+    def fresh(hint: str) -> str:
+        nonlocal counter
+        while True:
+            counter += 1
+            candidate = f"{hint}_{counter}"
+            if candidate not in taken:
+                taken.add(candidate)
+                return candidate
+
+    emit_at: dict[str, list[Node]] = {}
+    remove: set[str] = set()
+    for members in groups.values():
+        members.sort(key=lambda n: index[n.name])
+        leader = members[0]
+        weight_dtypes = {constants[m.inputs[1]].dtype for m in members}
+        bias_dtypes = (
+            {constants[m.inputs[2]].dtype for m in members} if len(leader.inputs) == 3 else set()
+        )
+        if len(weight_dtypes) != 1 or len(bias_dtypes) > 1:
+            continue
+        x_spec = specs[leader.inputs[0]]
+        weight_name = fresh(f"{leader.name}_shared_weight")
+        constants[weight_name] = torch.cat(
+            [constants[m.inputs[1]] for m in members], dim=1
+        ).contiguous()
+        inputs = [leader.inputs[0], weight_name]
+        if len(leader.inputs) == 3:
+            bias_name = fresh(f"{leader.name}_shared_bias")
+            constants[bias_name] = torch.cat([constants[m.inputs[2]] for m in members])
+            inputs.append(bias_name)
+        total = sum(m.spec.shape[1] for m in members)
+        wide_name = fresh(f"{leader.name}_shared")
+        wide_spec = TensorSpec((x_spec.shape[0], total), x_spec.dtype, x_spec.device)
+        emitted = [Node(wide_name, "linear", tuple(inputs), {}, wide_spec)]
+        offset = 0
+        for member in members:
+            emitted.append(
+                Node(
+                    member.name,
+                    "narrow",
+                    (wide_name,),
+                    {"dim": 1, "start": offset, "length": member.spec.shape[1]},
+                    member.spec,
+                )
+            )
+            offset += member.spec.shape[1]
+            remove.add(member.name)
+        emit_at[leader.name] = emitted
+    nodes: list[Node] = []
+    for node in graph.nodes:
+        if node.name in emit_at:
+            nodes.extend(emit_at[node.name])
+        elif node.name not in remove:
+            nodes.append(node)
+    return _rebuild(graph, nodes, constants)
+
+
 def _topological_order(graph: Graph, score) -> list[Node]:
     outputs = set(graph.outputs)
     index = {n.name: i for i, n in enumerate(graph.nodes)}
@@ -275,7 +368,7 @@ def _topological_order(graph: Graph, score) -> list[Node]:
         best = max(ready, key=lambda n: score(n, index[n.name], freed_bytes(n)))
         ready.remove(best)
         order.append(best)
-        for consumer in consumers.get(best.name, ()):
+        for consumer in sorted(consumers.get(best.name, ())):
             remaining[consumer].discard(best.name)
             if not remaining[consumer]:
                 ready.append(by_name[consumer])
@@ -326,6 +419,7 @@ def optimize(graph: Graph) -> tuple[Graph, list[PassRecord]]:
         ("common_subexpression_elimination", common_subexpression_elimination),
         ("canonicalize_linear", canonicalize_linear),
         ("fuse_linear_gelu", fuse_linear_gelu),
+        ("fuse_shared_projections", fuse_shared_projections),
         ("eliminate_dead_nodes", eliminate_dead_nodes),
         ("schedule", schedule),
     ):

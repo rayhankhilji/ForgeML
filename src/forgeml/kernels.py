@@ -54,6 +54,7 @@ def matmul(
     b: torch.Tensor,
     bias: torch.Tensor | None = None,
     *,
+    activation: str = "none",
     approximate: str = "none",
     config: KernelConfig = DEFAULT_CONFIG,
     out: torch.Tensor | None = None,
@@ -74,8 +75,12 @@ def matmul(
     k2, n = b.shape
     if k != k2 or m <= 0 or n <= 0 or k <= 0:
         raise GraphError(f"matmul incompatible shapes {a.shape} x {b.shape}")
+    if activation not in ("none", "gelu"):
+        raise GraphError(f"activation must be 'none' or 'gelu', got {activation!r}")
     if approximate not in ("none", "tanh"):
         raise GraphError(f"approximate must be 'none' or 'tanh', got {approximate!r}")
+    if activation == "none" and approximate != "none":
+        raise GraphError("approximate only applies when activation='gelu'")
     if bias is not None and (
         not isinstance(bias, torch.Tensor)
         or not bias.is_cuda
@@ -108,7 +113,7 @@ def matmul(
     from forgeml._triton import launch
 
     with torch.cuda.device(a.device):
-        return launch(a, b, bias, out, approximate, config)
+        return launch(a, b, bias, out, approximate, config, activation)
 
 
 def select_kernels(graph: Graph, backend: str) -> dict[str, str]:

@@ -164,6 +164,56 @@ def test_output_alias_not_clobbered_by_slot_reuse():
     torch.testing.assert_close(out_d, torch.relu(torch.relu(x) * 2))
 
 
+def test_narrow_executes_as_borrowed_view():
+    from forgeml.ir import GraphBuilder, TensorSpec
+
+    b = GraphBuilder({"x": TensorSpec((2, 8), torch.float32, "cpu")})
+    b.add("n", "narrow", ("x",), dim=1, start=2, length=3)
+    b.add("y", "relu", ("n",))
+    g = b.finish(("y",))
+    c = compile(g, optimize=False)
+    x = torch.randn(2, 8)
+    torch.testing.assert_close(c(x), torch.relu(x[:, 2:5]))
+    assert c.memory_plan.aliases == {"n": "x"}
+
+
+def test_triton_dispatch_decouples_activation_from_bias(monkeypatch):
+    from forgeml import kernels
+    from forgeml.ir import GraphBuilder, TensorSpec
+
+    seen = []
+
+    def fake_matmul(
+        a, b, bias=None, *, activation="none", approximate="none", config=None, out=None
+    ):
+        seen.append(activation)
+        value = a @ b + (bias if bias is not None else 0)
+        if activation == "gelu":
+            value = torch.nn.functional.gelu(value, approximate=approximate)
+        return value if out is None else out.copy_(value)
+
+    monkeypatch.setattr(kernels, "matmul", fake_matmul)
+
+    model = nn.Linear(4, 8, bias=True).eval()
+    x = torch.randn(2, 4)
+    c = compile(model, (x,), optimize=False)
+    c.kernel_plan = {n.name: "triton" for n in c.graph.nodes}
+    torch.testing.assert_close(c(x), model(x))
+    assert seen and set(seen) == {"none"}
+
+    seen.clear()
+    b = GraphBuilder({"x": TensorSpec((2, 4), torch.float32, "cpu")})
+    b.constant("w", torch.randn(4, 8))
+    b.add("f", "fused_linear_gelu", ("x", "w"), approximate="tanh")
+    c2 = compile(b.finish(("f",)), optimize=False)
+    c2.kernel_plan = {"f": "triton"}
+    x2 = torch.randn(2, 4)
+    torch.testing.assert_close(
+        c2(x2), torch.nn.functional.gelu(x2 @ c2.graph.constants["w"], approximate="tanh")
+    )
+    assert set(seen) == {"gelu"}
+
+
 def test_explicit_graph_constants_snapshot_optimize_off():
     from forgeml.ir import GraphBuilder, TensorSpec
 

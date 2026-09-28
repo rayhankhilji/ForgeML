@@ -44,6 +44,11 @@ def benchmark_runtime(
     repeats: int = 10,
     dtype: torch.dtype = torch.float32,
 ) -> dict:
+    if any(
+        not isinstance(v, int) or isinstance(v, bool)
+        for v in (batch, prompt_length, new_tokens, repeats, warmup)
+    ):
+        raise ValueError("batch, prompt_length, new_tokens, repeats and warmup must be ints")
     if batch < 1 or prompt_length < 1 or new_tokens < 1 or repeats < 2 or warmup < 0:
         raise ValueError("positive batch/prompt/tokens, repeats >= 2 and warmup >= 0 required")
     if prompt_length + new_tokens > config.max_seq_len:
@@ -188,8 +193,11 @@ def compare_reports(reports: list[dict]) -> dict:
         ):
             raise ValueError("all points must pass correctness gates")
         topology = report["topology"]
-        world = topology["world_size"]
-        if world < 1 or topology["tp"] * topology["pp"] != world:
+        world, tp, pp = topology["world_size"], topology["tp"], topology["pp"]
+        if (
+            any(not isinstance(v, int) or isinstance(v, bool) or v < 1 for v in (world, tp, pp))
+            or tp * pp != world
+        ):
             raise ValueError("invalid topology")
         key = (topology["tp"], topology["pp"])
         if key in topologies:
@@ -251,6 +259,7 @@ def main() -> None:
         return
     if args.threads < 1:
         parser.error("--threads must be positive")
+    previous_tf32 = torch.backends.cuda.matmul.allow_tf32
     torch.set_num_threads(args.threads)
     torch.set_float32_matmul_precision("highest")
     torch.backends.cuda.matmul.allow_tf32 = False
@@ -304,6 +313,7 @@ def main() -> None:
         else:
             engine.serve()
     finally:
+        torch.backends.cuda.matmul.allow_tf32 = previous_tf32
         if engine is not None:
             engine.close()
         context.close()

@@ -33,7 +33,8 @@ def tune_graph(
         expected = evaluate(node.op, args, node.attrs)
         if compiled.kernel_plan.get(node.name) == "triton":
             bias = args[2] if len(args) == 3 else None
-            approximate = node.attrs.get("approximate", "none")
+            activation = "gelu" if node.op == "fused_linear_gelu" else "none"
+            approximate = node.attrs.get("approximate", "none") if activation == "gelu" else "none"
             variants = {}
             configs = {}
             rejected = {}
@@ -41,15 +42,26 @@ def tune_graph(
             for index, config in enumerate(kernels.CANDIDATES):
                 name = f"candidate_{index}"
 
-                def launch(config=config, args=args, bias=bias, approximate=approximate):
+                def launch(
+                    config=config,
+                    args=args,
+                    bias=bias,
+                    activation=activation,
+                    approximate=approximate,
+                ):
                     return kernels.matmul(
-                        args[0], args[1], bias, approximate=approximate, config=config
+                        args[0],
+                        args[1],
+                        bias,
+                        activation=activation,
+                        approximate=approximate,
+                        config=config,
                     )
 
-                actual = launch()
                 try:
+                    actual = launch()
                     errors[name] = check_output(actual, expected)
-                except AssertionError as exc:
+                except Exception as exc:  # noqa: BLE001 - any launch failure rejects the candidate
                     rejected[name] = str(exc)
                     continue
                 variants[name] = launch
@@ -77,6 +89,7 @@ def tune_graph(
                 "input_strides": [list(arg.stride()) for arg in args],
                 "dtype": str(args[0].dtype),
                 "device": str(args[0].device),
+                "activation": activation,
                 "approximate": approximate,
             }
         values[node.name] = expected

@@ -9,7 +9,7 @@ from forgeml.analysis import graph_analysis
 from forgeml.frontend import from_torch
 from forgeml.ir import Graph, GraphError
 from forgeml.kernels import DEFAULT_CONFIG, KernelConfig
-from forgeml.memory import VIEW_LIKE_OPS, MemoryPlan, plan_memory
+from forgeml.memory import OUT_CAPABLE_OPS, VIEW_LIKE_OPS, MemoryPlan, plan_memory
 from forgeml.ops import evaluate
 from forgeml.passes import PassRecord
 from forgeml.passes import optimize as optimize_graph
@@ -25,6 +25,18 @@ class CompiledModel:
     kernel_plan: dict[str, str] = field(default_factory=dict)
     kernel_configs: dict[str, KernelConfig] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        remaining: dict[str, int] = {}
+        for node in self.graph.nodes:
+            for i in node.inputs:
+                remaining[i] = remaining.get(i, 0) + 1
+        self._remaining_template = remaining
+        self._outputs = frozenset(self.graph.outputs)
+        self._produced = {node.name for node in self.graph.nodes}
+        # The slot arena is allocated once and reused across calls. __call__ is
+        # therefore not reentrant; concurrent calls must synchronize externally.
+        self._slots: dict[int, torch.Tensor] | None = None
+
     def autotune(self, *inputs: torch.Tensor, warmup: int = 3, repeats: int = 10) -> dict:
         from forgeml.autotune import tune_graph
 
@@ -37,11 +49,10 @@ class CompiledModel:
         names = list(self.graph.inputs)
         if len(inputs) != len(names):
             raise GraphError(f"expected {len(names)} inputs, got {len(inputs)}")
-        for t in inputs:
-            if not isinstance(t, torch.Tensor):
-                raise GraphError("inputs must be torch.Tensor")
         values: dict[str, torch.Tensor] = {}
         for name, t in zip(names, inputs):
+            if not isinstance(t, torch.Tensor):
+                raise GraphError("inputs must be torch.Tensor")
             spec = self.graph.inputs[name]
             if tuple(t.shape) != spec.shape:
                 raise GraphError(f"input {name!r} shape {tuple(t.shape)} != expected {spec.shape}")
@@ -52,32 +63,33 @@ class CompiledModel:
             values[name] = t
         for name, t in self.graph.constants.items():
             values[name] = t
-        plan = self.memory_plan
-        slots: dict[int, torch.Tensor] = {}
-        for slot, spec in plan.slot_specs.items():
-            slots[slot] = torch.empty(spec.shape, dtype=spec.dtype, device=spec.device)
-        outputs = set(self.graph.outputs)
-        consumers: dict[str, int] = {}
-        for node in self.graph.nodes:
-            for i in node.inputs:
-                consumers[i] = consumers.get(i, 0) + 1
-        remaining = dict(consumers)
+        if self._slots is None:
+            self._slots = {
+                slot: torch.empty(spec.shape, dtype=spec.dtype, device=spec.device)
+                for slot, spec in self.memory_plan.slot_specs.items()
+            }
+        slots = self._slots
+        outputs = self._outputs
+        remaining = dict(self._remaining_template)
         with torch.inference_mode():
             for node in self.graph.nodes:
                 args = tuple(values[i] for i in node.inputs)
                 is_output = node.name in outputs
                 use_triton = self.kernel_plan.get(node.name) == "triton"
-                if is_output:
-                    if use_triton:
-                        values[node.name] = self._run_triton(node, args, None)
-                    else:
-                        values[node.name] = evaluate(node.op, args, node.attrs).clone()
-                elif node.op in VIEW_LIKE_OPS:
+                if node.op in VIEW_LIKE_OPS:
                     if use_triton:
                         raise GraphError(f"no triton kernel for op {node.op!r}")
-                    values[node.name] = evaluate(node.op, args, node.attrs)
-                else:
-                    alloc = plan.allocations[node.name]
+                    out_value = self._evaluate(node, args)
+                    # Materialize view outputs so they never alias reusable slots.
+                    values[node.name] = out_value.clone() if is_output else out_value
+                elif is_output:
+                    values[node.name] = (
+                        self._run_triton(node, args, None)
+                        if use_triton
+                        else self._evaluate(node, args)
+                    )
+                elif node.op in OUT_CAPABLE_OPS:
+                    alloc = self.memory_plan.allocations[node.name]
                     view = slots[alloc.slot][: alloc.size_bytes // node.spec.dtype.itemsize]
                     view = view.view(node.spec.shape)
                     if use_triton:
@@ -93,22 +105,42 @@ class CompiledModel:
                         torch.add(args[0], args[1], out=view)
                     elif node.op == "mul":
                         torch.mul(args[0], args[1], out=view)
-                    else:
-                        view.copy_(evaluate(node.op, args, node.attrs))
+                    elif node.op == "relu":
+                        torch.clamp_min(args[0], 0, out=view)
                     values[node.name] = view
+                else:
+                    # Ops without an out= variant produce a fresh tensor whose
+                    # lifetime is managed by refcounting, not the slot arena.
+                    values[node.name] = (
+                        self._run_triton(node, args, None)
+                        if use_triton
+                        else self._evaluate(node, args)
+                    )
                 for i in node.inputs:
                     if i in remaining:
                         remaining[i] -= 1
                         if remaining[i] == 0 and i not in outputs:
                             values.pop(i, None)
+            produced = self._produced
             result = []
             for name in self.graph.outputs:
                 if name not in values:
                     raise GraphError(f"output {name!r} was not produced")
-                result.append(values[name].clone())
+                # Node-produced outputs already own their storage; outputs that
+                # name an input or constant must be cloned to avoid aliasing.
+                result.append(values[name] if name in produced else values[name].clone())
         if self.graph.output_is_tuple:
             return tuple(result)
         return result[0]
+
+    @staticmethod
+    def _evaluate(node, args: tuple[torch.Tensor, ...]) -> torch.Tensor:
+        try:
+            return evaluate(node.op, args, node.attrs)
+        except GraphError:
+            raise
+        except Exception as e:
+            raise GraphError(f"node {node.name!r} ({node.op}) execution failed: {e}") from e
 
     def _run_triton(
         self, node, args: tuple[torch.Tensor, ...], out: torch.Tensor | None
@@ -125,6 +157,7 @@ class CompiledModel:
                 args[0],
                 args[1],
                 args[2] if len(args) == 3 else None,
+                activation="gelu",
                 approximate=node.attrs.get("approximate", "none"),
                 config=config,
                 out=out,

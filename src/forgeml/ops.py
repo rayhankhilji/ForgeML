@@ -13,6 +13,7 @@ SUPPORTED_OPS = {
     "reshape",
     "transpose",
     "softmax",
+    "narrow",
     "fused_linear_gelu",
     "layer_norm",
     "sdpa",
@@ -42,6 +43,8 @@ def evaluate(op: str, args: tuple[torch.Tensor, ...], attrs: dict) -> torch.Tens
         return torch.transpose(args[0], attrs["dim0"], attrs["dim1"])
     if op == "softmax":
         return torch.softmax(args[0], dim=attrs["dim"])
+    if op == "narrow":
+        return torch.narrow(args[0], attrs["dim"] % args[0].dim(), attrs["start"], attrs["length"])
     if op == "fused_linear_gelu":
         if len(args) == 3:
             out = torch.addmm(args[2], args[0], args[1])

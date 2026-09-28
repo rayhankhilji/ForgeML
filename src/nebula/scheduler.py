@@ -51,7 +51,6 @@ class AsyncBatcher:
         self._healthy = True
         self._worker: asyncio.Task | None = None
         self._wake: asyncio.Event | None = None
-        self._inflight = 0
         self._engine_closed = False
 
     @property
@@ -102,6 +101,19 @@ class AsyncBatcher:
         self._outstanding -= 1
 
     async def _run(self) -> None:
+        try:
+            await self._drain_loop()
+        except Exception as e:
+            logging.getLogger(__name__).exception("Nebula batch worker failed")
+            self._healthy = False
+            while self._queue:
+                it = self._queue.popleft()
+                if not it[2].done():
+                    it[2].set_exception(e)
+                self._retire(it[2])
+            raise
+
+    async def _drain_loop(self) -> None:
         while True:
             if not self._queue:
                 if self._closed:
@@ -110,7 +122,12 @@ class AsyncBatcher:
                 if not self._queue:
                     await self._wake.wait()
                     continue
-            await asyncio.sleep(self.batch_window_ms / 1000.0)
+            # Skip the batching window when the head cohort can already fill a
+            # maximum-size batch.
+            key0 = (len(self._queue[0][0]), self._queue[0][1])
+            ready = sum(1 for it in self._queue if (len(it[0]), it[1]) == key0)
+            if ready < self.max_batch_size and self.batch_window_ms > 0:
+                await asyncio.sleep(self.batch_window_ms / 1000.0)
             batch = []
             key = None
             rest = deque()
@@ -132,7 +149,6 @@ class AsyncBatcher:
                 continue
             prompts = [it[0] for it in live]
             max_new = live[0][1]
-            self._inflight += len(live)
             try:
                 results = await asyncio.to_thread(self.engine.generate, prompts, max_new)
                 if not isinstance(results, list) or len(results) != len(live):
@@ -140,7 +156,6 @@ class AsyncBatcher:
             except Exception as e:
                 logging.getLogger(__name__).exception("Nebula batch execution failed")
                 self._healthy = False
-                self._inflight -= len(live)
                 for it in live:
                     if not it[2].done():
                         it[2].set_exception(e)
@@ -151,7 +166,6 @@ class AsyncBatcher:
                         it[2].set_exception(e)
                     self._retire(it[2])
                 return
-            self._inflight -= len(live)
             for it, res in zip(live, results):
                 if not it[2].done():
                     it[2].set_result(res)
@@ -169,12 +183,14 @@ class AsyncBatcher:
                 self._retire(it[2])
             if self._wake is not None:
                 self._wake.set()
-        if self._worker is not None:
-            await asyncio.shield(self._worker)
-            self._worker = None
-        if not self._engine_closed:
-            self._engine_closed = True
-            await asyncio.to_thread(self.engine.close)
+        try:
+            if self._worker is not None:
+                await asyncio.shield(self._worker)
+                self._worker = None
+        finally:
+            if not self._engine_closed:
+                self._engine_closed = True
+                await asyncio.to_thread(self.engine.close)
 
     async def __aenter__(self):
         return self

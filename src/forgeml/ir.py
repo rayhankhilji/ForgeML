@@ -46,9 +46,13 @@ class TensorSpec:
         if not isinstance(self.device, str) or not self.device:
             raise GraphError(f"device must be a non-empty string, got {self.device!r}")
         try:
-            torch.device(self.device)
+            parsed = torch.device(self.device)
         except (RuntimeError, TypeError) as e:
             raise GraphError(f"invalid device {self.device!r}") from e
+        # Canonicalize index-less CUDA devices so that "cuda" and "cuda:0"
+        # refer to the same value everywhere specs are compared by string.
+        if parsed.type == "cuda" and parsed.index is None:
+            object.__setattr__(self, "device", "cuda:0")
 
     @property
     def nbytes(self) -> int:
@@ -79,11 +83,13 @@ def _meta_tensor(spec: TensorSpec) -> torch.Tensor:
     return torch.empty(spec.shape, dtype=spec.dtype, device="meta")
 
 
-def _check_attrs(op: str, attrs: dict[str, Any], arity: int) -> None:
+def _check_attrs(op: str, attrs: dict[str, Any]) -> None:
     from forgeml.ops import SUPPORTED_OPS
 
     if op not in SUPPORTED_OPS:
         raise GraphError(f"unsupported op {op!r}")
+    if not isinstance(attrs, dict):
+        raise GraphError(f"op {op!r} attrs must be a dict, got {type(attrs).__name__}")
     allowed = {
         "matmul": set(),
         "linear": set(),
@@ -94,6 +100,7 @@ def _check_attrs(op: str, attrs: dict[str, Any], arity: int) -> None:
         "reshape": {"shape"},
         "transpose": {"dim0", "dim1"},
         "softmax": {"dim"},
+        "narrow": {"dim", "start", "length"},
         "fused_linear_gelu": {"approximate"},
         "layer_norm": {"normalized_shape", "eps"},
         "sdpa": {"is_causal", "scale"},
@@ -107,6 +114,7 @@ def _check_attrs(op: str, attrs: dict[str, Any], arity: int) -> None:
         "reshape": {"shape"},
         "transpose": {"dim0", "dim1"},
         "softmax": {"dim"},
+        "narrow": {"dim", "start", "length"},
         "layer_norm": {"normalized_shape", "eps"},
         "sdpa": {"is_causal"},
         "conv2d": {"stride", "padding", "dilation", "groups"},
@@ -134,10 +142,13 @@ def _pair(value: Any, name: str, *, positive: bool) -> tuple[int, int]:
     return pair
 
 
+_FLOAT_ONLY_OPS = {"gelu", "softmax", "fused_linear_gelu", "layer_norm", "sdpa", "conv2d"}
+
+
 def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) -> TensorSpec:
     from forgeml.ops import evaluate
 
-    _check_attrs(op, attrs, len(input_specs))
+    _check_attrs(op, attrs)
     expected_arity = {
         "matmul": (2,),
         "linear": (2, 3),
@@ -148,6 +159,7 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
         "reshape": (1,),
         "transpose": (1,),
         "softmax": (1,),
+        "narrow": (1,),
         "fused_linear_gelu": (2, 3),
         "layer_norm": (1, 3),
         "sdpa": (3,),
@@ -157,12 +169,16 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
     if len(input_specs) not in expected_arity:
         choices = "/".join(str(v) for v in expected_arity)
         raise GraphError(f"op {op!r} expects {choices} inputs, got {len(input_specs)}")
+    if op in _FLOAT_ONLY_OPS and any(not s.dtype.is_floating_point for s in input_specs):
+        raise GraphError(f"op {op!r} requires floating-point inputs")
     if op == "matmul":
         a, b = input_specs
         if len(a.shape) != 2 or len(b.shape) != 2:
             raise GraphError("matmul requires rank-2 inputs")
         if a.dtype != b.dtype:
             raise GraphError(f"matmul dtype mismatch {a.dtype} vs {b.dtype}")
+        if a.dtype == torch.bool:
+            raise GraphError("matmul does not support bool inputs")
         if a.shape[1] != b.shape[0]:
             raise GraphError(f"matmul shape mismatch {a.shape} x {b.shape}")
     if op == "linear":
@@ -171,6 +187,8 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
             raise GraphError("linear requires rank-2 input and weight tensors")
         if x.dtype != weight.dtype:
             raise GraphError(f"linear dtype mismatch {x.dtype} vs {weight.dtype}")
+        if x.dtype == torch.bool:
+            raise GraphError("linear does not support bool inputs")
         if x.shape[1] != weight.shape[0]:
             raise GraphError(f"linear shape mismatch {x.shape} x {weight.shape}")
         if len(input_specs) == 3:
@@ -214,6 +232,25 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
         rank = len(input_specs[0].shape)
         if not isinstance(d, int) or isinstance(d, bool) or not -rank <= d < rank:
             raise GraphError(f"softmax dim={d!r} out of range for rank {rank}")
+    if op == "narrow":
+        x = input_specs[0]
+        rank = len(x.shape)
+        for key in ("dim", "start", "length"):
+            v = attrs[key]
+            if not isinstance(v, int) or isinstance(v, bool):
+                raise GraphError(f"narrow {key} must be an int, got {v!r}")
+        dim = attrs["dim"] % rank if rank else attrs["dim"]
+        if rank == 0 or not -rank <= attrs["dim"] < rank:
+            raise GraphError(f"narrow dim={attrs['dim']!r} out of range for rank {rank}")
+        if (
+            attrs["length"] <= 0
+            or attrs["start"] < 0
+            or attrs["start"] + attrs["length"] > x.shape[dim]
+        ):
+            raise GraphError(
+                f"narrow range start={attrs['start']} length={attrs['length']} "
+                f"exceeds dim {dim} of size {x.shape[dim]}"
+            )
     if op == "fused_linear_gelu":
         a, b = input_specs[:2]
         if len(a.shape) != 2 or len(b.shape) != 2:
@@ -374,6 +411,10 @@ class Graph:
             for inp in node.inputs:
                 if inp not in env:
                     raise GraphError(f"node {node.name!r} input {inp!r} is not defined before use")
+            if not isinstance(node.attrs, dict):
+                raise GraphError(
+                    f"node {node.name!r} attrs must be a dict, got {type(node.attrs).__name__}"
+                )
             try:
                 spec = infer_spec(node.op, [env[i] for i in node.inputs], dict(node.attrs))
             except GraphError as e:
@@ -385,6 +426,8 @@ class Graph:
             env[node.name] = node.spec
         if not self.outputs:
             raise GraphError("graph outputs must be non-empty")
+        if not isinstance(self.output_is_tuple, bool):
+            raise GraphError("output_is_tuple must be a bool")
         if len(self.outputs) > 1 and not self.output_is_tuple:
             raise GraphError("multiple graph outputs require output_is_tuple=True")
         for name in self.outputs:

@@ -65,6 +65,8 @@ class ParallelContext:
                 world_size = int(env_world)
                 rank = int(os.environ.get("RANK", "0"))
                 owns = True
+        if world_size < 1 or not 0 <= rank < world_size:
+            raise ValueError(f"rank {rank} out of range for world_size {world_size}")
         if world_size != tp_size * pp_size:
             raise ValueError(f"world_size {world_size} != tp_size {tp_size} * pp_size {pp_size}")
         dev = torch.device(device)

@@ -4,7 +4,12 @@ from dataclasses import dataclass
 
 from forgeml.ir import Graph, TensorSpec
 
-VIEW_LIKE_OPS = {"reshape", "transpose"}
+VIEW_LIKE_OPS = {"reshape", "transpose", "narrow"}
+
+# Ops whose executor writes results through an out= parameter into a planned
+# slot. Every other internal node produces a fresh tensor that is managed by
+# refcounting rather than the slot arena.
+OUT_CAPABLE_OPS = {"matmul", "linear", "add", "mul", "relu"}
 
 
 @dataclass(frozen=True)
@@ -54,20 +59,34 @@ def plan_memory(graph: Graph) -> MemoryPlan:
 
     memo: dict[str, int] = {}
 
-    def logical_last(name: str) -> int:
-        if name in memo:
-            return memo[name]
-        last = index[name]
-        for consumer_name in consumers.get(name, ()):
-            consumer = by_name[consumer_name]
-            contribution = (
-                logical_last(consumer_name)
-                if consumer.op in VIEW_LIKE_OPS
-                else index[consumer_name]
-            )
-            last = max(last, contribution)
-        memo[name] = last
-        return last
+    def logical_last(start: str) -> int:
+        if start in memo:
+            return memo[start]
+        stack = [start]
+        while stack:
+            name = stack[-1]
+            if name in memo:
+                stack.pop()
+                continue
+            last = index[name]
+            pending = False
+            for consumer_name in consumers.get(name, ()):
+                consumer = by_name[consumer_name]
+                if consumer.op in VIEW_LIKE_OPS:
+                    if consumer_name in memo:
+                        contribution = memo[consumer_name]
+                    else:
+                        stack.append(consumer_name)
+                        pending = True
+                        continue
+                else:
+                    contribution = index[consumer_name]
+                last = max(last, contribution)
+            if pending:
+                continue
+            memo[name] = last
+            stack.pop()
+        return memo[start]
 
     aliases: dict[str, str] = {}
     allocations: dict[str, Allocation] = {}
@@ -81,6 +100,8 @@ def plan_memory(graph: Graph) -> MemoryPlan:
         naive += node.spec.nbytes
         if node.op in VIEW_LIKE_OPS:
             aliases[node.name] = node.inputs[0]
+            continue
+        if node.op not in OUT_CAPABLE_OPS:
             continue
         first = index[node.name]
         last = logical_last(node.name)

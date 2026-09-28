@@ -62,12 +62,12 @@ def _matmul_kernel(
     )
 
 
-def launch(a, b, bias, out, approximate, config):
+def launch(a, b, bias, out, approximate, config, activation):
     import triton
 
     m, k = a.shape
     _, n = b.shape
-    act = 0 if bias is None else (1 if approximate == "none" else 2)
+    act = 0 if activation == "none" else (1 if approximate == "none" else 2)
     grid = (triton.cdiv(m, config.block_m), triton.cdiv(n, config.block_n))
     _matmul_kernel[grid](
         a,

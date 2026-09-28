@@ -75,7 +75,9 @@ def test_autotune_linear_passes_optional_bias(monkeypatch):
     compiled = compile(model, (x,), optimize=False)
     compiled.kernel_plan = {node.name: "triton" for node in compiled.graph.nodes}
 
-    def fake_matmul(a, b, bias=None, *, approximate="none", config=None, out=None):
+    def fake_matmul(
+        a, b, bias=None, *, activation="none", approximate="none", config=None, out=None
+    ):
         seen_bias.append(bias is not None)
         value = a @ b + bias
         return value if out is None else out.copy_(value)
@@ -98,8 +100,12 @@ def test_autotune_excludes_incorrect_candidate(monkeypatch):
     compiled = compile(model, (x,))
     compiled.kernel_plan = {node.name: "triton" for node in compiled.graph.nodes}
 
-    def fake_matmul(a, b, bias=None, *, approximate="none", config=None, out=None):
-        value = torch.nn.functional.gelu(a @ b + bias, approximate=approximate)
+    def fake_matmul(
+        a, b, bias=None, *, activation="none", approximate="none", config=None, out=None
+    ):
+        value = a @ b + bias
+        if activation == "gelu":
+            value = torch.nn.functional.gelu(value, approximate=approximate)
         return value + 10 if config == kernels.CANDIDATES[0] else value
 
     def fake_measure(variants, **kwargs):
@@ -113,3 +119,31 @@ def test_autotune_excludes_incorrect_candidate(monkeypatch):
     assert "candidate_0" not in node["candidates"]
     assert node["winner"] == "candidate_1"
     assert list(compiled.kernel_configs.values()) == [kernels.CANDIDATES[1]]
+
+
+def test_autotune_records_launch_failure_as_rejection(monkeypatch):
+    from forgeml import autotune, compile, kernels
+
+    model = torch.nn.Linear(4, 8, bias=False).eval()
+    x = torch.randn(2, 4)
+    compiled = compile(model, (x,), optimize=False)
+    compiled.kernel_plan = {node.name: "triton" for node in compiled.graph.nodes}
+
+    def fake_matmul(
+        a, b, bias=None, *, activation="none", approximate="none", config=None, out=None
+    ):
+        if config == kernels.CANDIDATES[0]:
+            raise RuntimeError("simulated launch failure")
+        value = a @ b + (bias if bias is not None else 0)
+        return value if out is None else out.copy_(value)
+
+    def fake_measure(variants, **kwargs):
+        return {name: measurement.summarize([1.0, 1.0]) for name in variants}
+
+    monkeypatch.setattr(kernels, "matmul", fake_matmul)
+    monkeypatch.setattr(autotune, "measure_variants", fake_measure)
+    report = autotune.tune_graph(compiled, (x,), warmup=0, repeats=2)
+    node = next(iter(report["nodes"].values()))
+    assert "candidate_0" in node["rejected"]
+    assert "candidate_0" not in node["candidates"]
+    assert node["winner"] in node["candidates"]

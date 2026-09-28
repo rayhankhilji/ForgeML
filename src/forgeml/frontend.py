@@ -80,6 +80,21 @@ def _static_shape(raw: Any, in_shape: tuple[int, ...], where: str) -> tuple[int,
     return tuple(dims)
 
 
+def _flatten_shape(spec: TensorSpec, start_dim: Any, end_dim: Any, where: str) -> tuple[int, ...]:
+    rank = len(spec.shape)
+    if rank == 0:
+        raise UnsupportedOperator(f"{where} requires a tensor of rank >= 1")
+    resolved = []
+    for name, raw in (("start_dim", start_dim), ("end_dim", end_dim)):
+        if not isinstance(raw, int) or isinstance(raw, bool) or not -rank <= raw < rank:
+            raise UnsupportedOperator(f"{where} {name}={raw!r} out of range for rank {rank}")
+        resolved.append(raw % rank)
+    start, end = resolved
+    if start > end:
+        raise UnsupportedOperator(f"{where} has start_dim > end_dim")
+    return spec.shape[:start] + (math.prod(spec.shape[start : end + 1]),) + spec.shape[end + 1 :]
+
+
 class _Lowerer:
     def __init__(self, model: nn.Module, example_inputs: tuple[torch.Tensor, ...]):
         self.model = model
@@ -172,18 +187,50 @@ class _Lowerer:
     def _linear(
         self, out_name: str, x: str, weight: torch.Tensor, bias: torch.Tensor | None
     ) -> str:
+        if weight.dim() != 2:
+            raise UnsupportedOperator(
+                f"linear weight at {out_name!r} must be rank-2, got rank {weight.dim()}"
+            )
+        if bias is not None and bias.dim() != 1:
+            raise UnsupportedOperator(
+                f"linear bias at {out_name!r} must be rank-1, got rank {bias.dim()}"
+            )
         w_name = self._fresh(f"{out_name}_weight_t")
         w_t = weight.t().contiguous()
         self.builder.constant(w_name, w_t)
         self.const_tensors[w_name] = w_t
-        inputs = (x, w_name)
+        x_spec = self.specs[x]
+        x_value = x
+        if len(x_spec.shape) != 2:
+            if not x_spec.shape:
+                raise UnsupportedOperator(f"linear input at {out_name!r} must have rank >= 1")
+            flat = self._fresh(f"{out_name}_flatten")
+            x_value = self.builder.add(
+                flat,
+                "reshape",
+                (x,),
+                shape=(math.prod(x_spec.shape[:-1]), x_spec.shape[-1]),
+            )
+        inputs = (x_value, w_name)
         if bias is not None:
             b_name = self._fresh(f"{out_name}_bias")
             b_c = bias.contiguous()
             self.builder.constant(b_name, b_c)
             self.const_tensors[b_name] = b_c
             inputs += (b_name,)
-        return self.builder.add(out_name, "linear", inputs)
+        result = self.builder.add(
+            self._fresh(f"{out_name}_linear") if len(x_spec.shape) != 2 else out_name,
+            "linear",
+            inputs,
+        )
+        if len(x_spec.shape) == 2:
+            return result
+        return self.builder.add(
+            out_name,
+            "reshape",
+            (result,),
+            shape=x_spec.shape[:-1] + (w_t.shape[1],),
+        )
 
     def lower(self) -> Graph:
         inputs = {f"input_{i}": _spec(t) for i, t in enumerate(self.example_inputs)}
@@ -295,16 +342,8 @@ class _Lowerer:
             w = self._constant(f"{name}_weight", mod.weight)
             return self.builder.add(name, "embedding", (x, w))
         if isinstance(mod, nn.Flatten):
-            spec = self.specs[x]
-            rank = len(spec.shape)
-            start = mod.start_dim % rank
-            end = mod.end_dim % rank
-            if start > end:
-                raise UnsupportedOperator(f"Flatten at {name!r} has start_dim > end_dim")
-            shape = (
-                spec.shape[:start]
-                + (math.prod(spec.shape[start : end + 1]),)
-                + spec.shape[end + 1 :]
+            shape = _flatten_shape(
+                self.specs[x], mod.start_dim, mod.end_dim, f"Flatten at {name!r}"
             )
             return self.builder.add(name, "reshape", (x,), shape=shape)
         if isinstance(mod, nn.GELU):
@@ -382,16 +421,14 @@ class _Lowerer:
             except (RuntimeError, TypeError, ValueError) as e:
                 raise UnsupportedOperator(f"invalid arange arguments at {name!r}: {e}") from e
             return self._constant(name, tensor)
-        if target in (torch.matmul, torch.mm):
-            bound = self._bind(node, ("input", "other"))
-            return self.builder.add(
-                name, "matmul", (self._arg(bound["input"]), self._arg(bound["other"]))
-            )
-        if target is operator.matmul:
-            bound = self._bind(node, ("input", "other"))
-            return self.builder.add(
-                name, "matmul", (self._arg(bound["input"]), self._arg(bound["other"]))
-            )
+        if target in (torch.matmul, torch.mm, operator.matmul):
+            bound = self._bind(node, ("input", "other", "mat2"), {"other": None, "mat2": None})
+            if bound["other"] is not None and bound["mat2"] is not None:
+                raise UnsupportedOperator(f"matmul got both 'other' and 'mat2' at {name!r}")
+            other = bound["other"] if bound["other"] is not None else bound["mat2"]
+            if other is None:
+                raise UnsupportedOperator(f"matmul at {name!r} needs a second operand")
+            return self.builder.add(name, "matmul", (self._arg(bound["input"]), self._arg(other)))
         if target in (operator.add, torch.add):
             bound = self._bind(node, ("input", "other", "alpha", "out"), {"alpha": 1, "out": None})
             if "out" in node.kwargs or bound["out"] is not None:
@@ -453,8 +490,8 @@ class _Lowerer:
         if target in (F.softmax, torch.softmax):
             bound = self._bind(
                 node,
-                ("input", "dim", "dtype", "_stacklevel"),
-                {"dim": None, "dtype": None, "_stacklevel": 3},
+                ("input", "dim", "_stacklevel", "dtype"),
+                {"dim": None, "_stacklevel": 3, "dtype": None},
             )
             if bound["dtype"] is not None:
                 raise UnsupportedOperator(f"softmax dtype= at {name!r} is not supported")
@@ -556,16 +593,11 @@ class _Lowerer:
                 node, ("input", "start_dim", "end_dim"), {"start_dim": 0, "end_dim": -1}
             )
             x = self._arg(bound["input"])
-            spec = self.specs[x]
-            rank = len(spec.shape)
-            start = self._literal(bound["start_dim"]) % rank
-            end = self._literal(bound["end_dim"]) % rank
-            if start > end:
-                raise UnsupportedOperator(f"flatten at {name!r} has start_dim > end_dim")
-            shape = (
-                spec.shape[:start]
-                + (math.prod(spec.shape[start : end + 1]),)
-                + spec.shape[end + 1 :]
+            shape = _flatten_shape(
+                self.specs[x],
+                self._literal(bound["start_dim"]),
+                self._literal(bound["end_dim"]),
+                f"flatten at {name!r}",
             )
             return self.builder.add(name, "reshape", (x,), shape=shape)
         raise UnsupportedOperator(
@@ -585,12 +617,19 @@ class _Lowerer:
             index = self._literal(bound["dim"])
             if not isinstance(index, int) or isinstance(index, bool):
                 raise UnsupportedOperator(f"{method} at {name!r} needs an int dimension")
+            if not -len(shape) <= index < len(shape):
+                raise UnsupportedOperator(
+                    f"{method} index {index} out of range for rank {len(shape)} at {name!r}"
+                )
             return _Static(shape[index])
         if method in ("matmul", "mm"):
-            bound = self._bind(node, ("input", "other"))
-            return self.builder.add(
-                name, "matmul", (self._arg(bound["input"]), self._arg(bound["other"]))
-            )
+            bound = self._bind(node, ("input", "other", "mat2"), {"other": None, "mat2": None})
+            if bound["other"] is not None and bound["mat2"] is not None:
+                raise UnsupportedOperator(f"{method} got both 'other' and 'mat2' at {name!r}")
+            other = bound["other"] if bound["other"] is not None else bound["mat2"]
+            if other is None:
+                raise UnsupportedOperator(f"{method} at {name!r} needs a second operand")
+            return self.builder.add(name, "matmul", (self._arg(bound["input"]), self._arg(other)))
         if method in ("view", "reshape"):
             if node.kwargs:
                 raise UnsupportedOperator(f"{method} kwargs at {name!r} are not supported")
@@ -609,16 +648,11 @@ class _Lowerer:
                 node, ("input", "start_dim", "end_dim"), {"start_dim": 0, "end_dim": -1}
             )
             x = self._arg(bound["input"])
-            spec = self.specs[x]
-            rank = len(spec.shape)
-            start = self._literal(bound["start_dim"]) % rank
-            end = self._literal(bound["end_dim"]) % rank
-            if start > end:
-                raise UnsupportedOperator(f"flatten at {name!r} has start_dim > end_dim")
-            shape = (
-                spec.shape[:start]
-                + (math.prod(spec.shape[start : end + 1]),)
-                + spec.shape[end + 1 :]
+            shape = _flatten_shape(
+                self.specs[x],
+                self._literal(bound["start_dim"]),
+                self._literal(bound["end_dim"]),
+                f"flatten at {name!r}",
             )
             return self.builder.add(name, "reshape", (x,), shape=shape)
         if method == "transpose":
@@ -651,14 +685,18 @@ class _Lowerer:
 
         result = output_node.args[0]
         if isinstance(result, torch.fx.Node):
+            if result.name not in self.env:
+                raise UnsupportedOperator(
+                    "model outputs must be produced tensors; static values are not supported"
+                )
             outputs = (self.env[result.name],)
             is_tuple = False
         elif isinstance(result, tuple):
             names = []
             for r in result:
-                if not isinstance(r, torch.fx.Node):
+                if not isinstance(r, torch.fx.Node) or r.name not in self.env:
                     raise UnsupportedOperator(
-                        "only flat tuples of tensors are supported as outputs"
+                        "only flat tuples of produced tensors are supported as outputs"
                     )
                 names.append(self.env[r.name])
             outputs = tuple(names)
@@ -694,8 +732,13 @@ def _onnx_tensor_to_torch(tp) -> torch.Tensor:
 
     if tp.data_location == onnx.TensorProto.EXTERNAL:
         raise UnsupportedOperator(f"tensor {tp.name!r} uses external data, which is not supported")
-    arr = onnx.numpy_helper.to_array(tp)
-    return torch.from_numpy(np.array(arr, copy=True, order="C"))
+    try:
+        arr = onnx.numpy_helper.to_array(tp)
+        return torch.from_numpy(np.array(arr, copy=True, order="C"))
+    except UnsupportedOperator:
+        raise
+    except Exception as e:
+        raise UnsupportedOperator(f"tensor {tp.name!r} has unsupported data: {e}") from e
 
 
 _ONNX_OPS = {
@@ -738,8 +781,11 @@ def _onnx_dtype(vi) -> torch.dtype:
     import onnx
 
     elem = vi.type.tensor_type.elem_type
-    np_dtype = onnx.helper.tensor_dtype_to_np_dtype(elem)
-    return torch.from_numpy(__import__("numpy").empty(0, dtype=np_dtype)).dtype
+    try:
+        np_dtype = onnx.helper.tensor_dtype_to_np_dtype(elem)
+        return torch.from_numpy(__import__("numpy").empty(0, dtype=np_dtype)).dtype
+    except Exception as e:
+        raise UnsupportedOperator(f"unsupported ONNX element type {elem}") from e
 
 
 def _onnx_check_arity(node, count: int) -> None:
@@ -766,13 +812,21 @@ def from_onnx(model_or_path, example_inputs: tuple[torch.Tensor, ...] | None = N
         raise UnsupportedOperator(f"unsupported ONNX opset {opset}")
     g = model.graph
 
+    onnx_inputs = [vi for vi in g.input if vi.name not in {i.name for i in g.initializer}]
+    if len({vi.name for vi in onnx_inputs}) != len(onnx_inputs):
+        raise GraphError("duplicate ONNX input names")
+    target_device = None
     if example_inputs is not None:
-        devices = {str(t.device) for t in example_inputs}
-        if len(devices) != 1:
-            raise GraphError("example inputs must all be on the same device")
-        target_device = devices.pop()
-    else:
-        target_device = None
+        if len(example_inputs) != len(onnx_inputs):
+            raise GraphError(
+                f"ONNX model expects {len(onnx_inputs)} inputs, "
+                f"got {len(example_inputs)} example inputs"
+            )
+        if example_inputs:
+            devices = {str(t.device) for t in example_inputs}
+            if len(devices) != 1:
+                raise GraphError("example inputs must all be on the same device")
+            target_device = devices.pop()
 
     const_tensors: dict[str, torch.Tensor] = {}
     for init in g.initializer:
@@ -784,15 +838,7 @@ def from_onnx(model_or_path, example_inputs: tuple[torch.Tensor, ...] | None = N
         const_tensors[init.name] = t
 
     builder_inputs: dict[str, TensorSpec] = {}
-    onnx_inputs = [vi for vi in g.input if vi.name not in const_tensors]
-    if len({vi.name for vi in onnx_inputs}) != len(onnx_inputs):
-        raise GraphError("duplicate ONNX input names")
     if example_inputs is not None:
-        if len(example_inputs) != len(onnx_inputs):
-            raise GraphError(
-                f"ONNX model expects {len(onnx_inputs)} inputs, "
-                f"got {len(example_inputs)} example inputs"
-            )
         for vi, t in zip(onnx_inputs, example_inputs):
             dims = _onnx_dims(vi)
             if len(dims) != t.dim():
@@ -955,7 +1001,11 @@ def from_onnx(model_or_path, example_inputs: tuple[torch.Tensor, ...] | None = N
                 raise UnsupportedOperator(
                     f"Reshape node {node.name!r} allowzero=1 is not supported"
                 )
-            shape_t = const_tensors.get(env[node.input[1]])
+            if len(ins) != 2:
+                raise GraphError(
+                    f"Reshape node {node.name!r} expects a data input and a shape input"
+                )
+            shape_t = const_tensors.get(ins[1])
             if shape_t is None:
                 raise UnsupportedOperator(
                     f"Reshape node {node.name!r} shape input must be constant"
@@ -1001,7 +1051,11 @@ def from_onnx(model_or_path, example_inputs: tuple[torch.Tensor, ...] | None = N
             set_out(out, builder.add(out, "reshape", (ins[0],), shape=tuple(resolved)))
             continue
         if node.op_type == "Conv":
-            _onnx_check_attrs(node, attrs, {"auto_pad", "strides", "pads", "dilations", "group"})
+            _onnx_check_attrs(
+                node,
+                attrs,
+                {"auto_pad", "strides", "pads", "dilations", "group", "kernel_shape"},
+            )
             if len(ins) not in (2, 3):
                 raise GraphError(f"Conv node {node.name!r} expects 2 or 3 inputs")
             auto_pad = attrs.get("auto_pad", b"NOTSET")
@@ -1012,23 +1066,30 @@ def from_onnx(model_or_path, example_inputs: tuple[torch.Tensor, ...] | None = N
                     f"Conv node {node.name!r} auto_pad={auto_pad!r} is not supported"
                 )
             strides = attrs.get("strides", [1, 1])
-            pads = attrs.get("pads", [0, 0])
+            pads = attrs.get("pads") or [0, 0, 0, 0]
             dilations = attrs.get("dilations", [1, 1])
             group = attrs.get("group", 1)
+            kernel_shape = attrs.get("kernel_shape")
+            if kernel_shape is not None and tuple(kernel_shape) != tuple(
+                spec_of_graph_name(ins[1]).shape[2:]
+            ):
+                raise GraphError(
+                    f"Conv node {node.name!r} kernel_shape {list(kernel_shape)} does not "
+                    "match the weight tensor"
+                )
             if len(strides) != 2 or len(dilations) != 2:
                 raise UnsupportedOperator(
                     f"Conv node {node.name!r} requires rank-2 spatial parameters"
                 )
-            if len(pads) == 4:
-                if pads[0] != pads[2] or pads[1] != pads[3]:
-                    raise UnsupportedOperator(
-                        f"Conv node {node.name!r} asymmetric pads {pads} are not supported"
-                    )
-                padding = (pads[0], pads[1])
-            elif len(pads) == 2:
-                padding = tuple(pads)
-            else:
-                raise UnsupportedOperator(f"Conv node {node.name!r} has invalid pads {pads}")
+            if len(pads) != 4:
+                raise UnsupportedOperator(
+                    f"Conv node {node.name!r} expects 4 pads for a 2-D convolution, got {pads}"
+                )
+            if pads[0] != pads[2] or pads[1] != pads[3]:
+                raise UnsupportedOperator(
+                    f"Conv node {node.name!r} asymmetric pads {pads} are not supported"
+                )
+            padding = (pads[0], pads[1])
             set_out(
                 out,
                 builder.add(
@@ -1043,6 +1104,8 @@ def from_onnx(model_or_path, example_inputs: tuple[torch.Tensor, ...] | None = N
             )
             continue
         if node.op_type == "LayerNormalization":
+            if opset < 17:
+                raise UnsupportedOperator("ONNX LayerNormalization requires opset >= 17")
             _onnx_check_attrs(node, attrs, {"axis", "epsilon", "stash_type"})
             if attrs.get("stash_type", 1) != 1:
                 raise UnsupportedOperator(
@@ -1094,7 +1157,6 @@ def from_onnx(model_or_path, example_inputs: tuple[torch.Tensor, ...] | None = N
             continue
         if node.op_type == "Gemm":
             _onnx_check_attrs(node, attrs, {"alpha", "beta", "transA", "transB"})
-            _onnx_check_arity(node, len(node.input))
             alpha = float(attrs.get("alpha", 1.0))
             beta = float(attrs.get("beta", 1.0))
             trans_a = int(attrs.get("transA", 0))
@@ -1141,16 +1203,18 @@ def from_onnx(model_or_path, example_inputs: tuple[torch.Tensor, ...] | None = N
     if missing:
         raise GraphError(f"ONNX outputs {missing} are not produced")
     for vi in g.output:
-        dims = _onnx_dims(vi)
         got = spec_of_graph_name(env[vi.name])
-        if len(dims) != len(got.shape):
-            raise GraphError(
-                f"ONNX output {vi.name!r} rank {len(dims)} != inferred {len(got.shape)}"
-            )
-        for meta, actual in zip(dims, got.shape):
-            if meta is not None and meta != actual:
-                raise GraphError(f"ONNX output {vi.name!r} dim {meta} != inferred {actual}")
-        if got.dtype != _onnx_dtype(vi):
+        tensor_type = vi.type.tensor_type
+        if tensor_type.HasField("shape"):
+            dims = _onnx_dims(vi)
+            if len(dims) != len(got.shape):
+                raise GraphError(
+                    f"ONNX output {vi.name!r} rank {len(dims)} != inferred {len(got.shape)}"
+                )
+            for meta, actual in zip(dims, got.shape):
+                if meta is not None and meta != actual:
+                    raise GraphError(f"ONNX output {vi.name!r} dim {meta} != inferred {actual}")
+        if tensor_type.elem_type and got.dtype != _onnx_dtype(vi):
             raise GraphError(
                 f"ONNX output {vi.name!r} dtype {got.dtype} != declared {_onnx_dtype(vi)}"
             )

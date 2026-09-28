@@ -203,11 +203,80 @@ def test_optimize_returns_records_and_preserves_original():
         "common_subexpression_elimination",
         "canonicalize_linear",
         "fuse_linear_gelu",
+        "fuse_shared_projections",
         "eliminate_dead_nodes",
         "schedule",
     ]
     assert len(out.nodes) == 1
     assert len(g.nodes) == 3  # original untouched
+
+
+def test_fuse_linear_gelu_fuses_bare_matmul():
+    b = GraphBuilder({"x": spec(2, 4)})
+    b.constant("w", torch.randn(4, 8))
+    b.add("mm", "matmul", ("x", "w"))
+    b.add("y", "gelu", ("mm",))
+    g = b.finish(("y",))
+    out = fuse_linear_gelu(g)
+    assert [n.op for n in out.nodes] == ["fused_linear_gelu"]
+    assert len(out.nodes[0].inputs) == 2
+
+
+def test_fuse_shared_projections_emits_wide_linear_and_narrows():
+    from forgeml import compile
+    from forgeml.passes import fuse_shared_projections
+
+    torch.manual_seed(0)
+    b = GraphBuilder({"x": spec(2, 8)})
+    b.constant("wq", torch.randn(8, 4))
+    b.constant("wk", torch.randn(8, 4))
+    b.constant("wv", torch.randn(8, 4))
+    b.add("q", "linear", ("x", "wq"))
+    b.add("k", "linear", ("x", "wk"))
+    b.add("v", "linear", ("x", "wv"))
+    b.add("yk", "add", ("q", "k"))
+    b.add("z", "add", ("yk", "v"))
+    g = b.finish(("z",))
+    out = fuse_shared_projections(g)
+    ops = [n.op for n in out.nodes]
+    assert ops.count("linear") == 1
+    assert ops.count("narrow") == 3
+    x = torch.randn(2, 8)
+    torch.testing.assert_close(compile(out, optimize=False)(x), compile(g, optimize=False)(x))
+
+
+def test_fuse_shared_projections_with_biases_and_output_member():
+    from forgeml import compile
+    from forgeml.passes import fuse_shared_projections
+
+    torch.manual_seed(1)
+    b = GraphBuilder({"x": spec(2, 8)})
+    b.constant("wq", torch.randn(8, 4))
+    b.constant("wk", torch.randn(8, 4))
+    b.constant("bq", torch.randn(4))
+    b.constant("bk", torch.randn(4))
+    b.add("q", "linear", ("x", "wq", "bq"))
+    b.add("k", "linear", ("x", "wk", "bk"))
+    g = b.finish(("q", "k"))
+    out = fuse_shared_projections(g)
+    ops = [n.op for n in out.nodes]
+    assert ops.count("linear") == 1 and ops.count("narrow") == 2
+    assert out.outputs == ("q", "k")
+    x = torch.randn(2, 8)
+    want = compile(g, optimize=False)(x)
+    got = compile(out, optimize=False)(x)
+    for a, e in zip(got, want):
+        torch.testing.assert_close(a, e)
+
+
+def test_cse_dedupes_commutative_operands():
+    b = GraphBuilder({"x": spec(4), "y": spec(4)})
+    b.add("a", "mul", ("x", "y"))
+    b.add("bb", "mul", ("y", "x"))
+    g = b.finish(("a", "bb"))
+    out = common_subexpression_elimination(g)
+    assert len(out.nodes) == 1
+    assert out.outputs == ("a", "a")
 
 
 def test_fold_skips_oversized_output_without_evaluating(monkeypatch):

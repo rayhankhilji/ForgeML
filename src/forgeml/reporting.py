@@ -8,6 +8,7 @@ import math
 from pathlib import Path
 
 from forgeml.measurement import summarize, write_report
+from forgeml.memory import OUT_CAPABLE_OPS, VIEW_LIKE_OPS
 
 
 def _bytes(spec: dict) -> int:
@@ -37,7 +38,6 @@ def validate_memory_plan(explanation: dict) -> None:
     if naive != plan["naive_bytes"] or planned != plan["planned_bytes"]:
         raise ValueError("memory totals do not agree with the recorded IR and slots")
     aliases = plan.get("aliases", {})
-    view_ops = {"reshape", "transpose"}
     index = {node["name"]: i for i, node in enumerate(graph["nodes"])}
     by_name = {node["name"]: node for node in graph["nodes"]}
     consumers: dict[str, list[str]] = {}
@@ -47,22 +47,38 @@ def validate_memory_plan(explanation: dict) -> None:
                 consumers.setdefault(source, []).append(node["name"])
     memo: dict[str, int] = {}
 
-    def logical_last(name: str) -> int:
-        if name in memo:
-            return memo[name]
-        last = index[name]
-        for consumer_name in consumers.get(name, ()):
-            consumer = by_name[consumer_name]
-            contribution = (
-                logical_last(consumer_name) if consumer["op"] in view_ops else index[consumer_name]
-            )
-            last = max(last, contribution)
-        memo[name] = last
-        return last
+    def logical_last(start: str) -> int:
+        if start in memo:
+            return memo[start]
+        stack = [start]
+        while stack:
+            name = stack[-1]
+            if name in memo:
+                stack.pop()
+                continue
+            last = index[name]
+            pending = False
+            for consumer_name in consumers.get(name, ()):
+                consumer = by_name[consumer_name]
+                if consumer["op"] in VIEW_LIKE_OPS:
+                    if consumer_name in memo:
+                        contribution = memo[consumer_name]
+                    else:
+                        stack.append(consumer_name)
+                        pending = True
+                        continue
+                else:
+                    contribution = index[consumer_name]
+                last = max(last, contribution)
+            if pending:
+                continue
+            memo[name] = last
+            stack.pop()
+        return memo[start]
 
     for name, source in aliases.items():
         node = internal.get(name)
-        if node is None or node["op"] not in view_ops or len(node["inputs"]) != 1:
+        if node is None or node["op"] not in VIEW_LIKE_OPS or len(node["inputs"]) != 1:
             raise ValueError("memory aliases must be internal view-like nodes")
         if source != node["inputs"][0]:
             raise ValueError("memory alias does not match its producer")
@@ -70,7 +86,7 @@ def validate_memory_plan(explanation: dict) -> None:
             name
         ):
             raise ValueError("aliased storage ends before its last view consumer")
-    materialized = set(internal) - set(aliases)
+    materialized = {name for name, node in internal.items() if node["op"] in OUT_CAPABLE_OPS}
     if set(plan["allocations"]) != materialized:
         raise ValueError("memory plan must cover exactly the materialized intermediate values")
     slots: dict[int, list[tuple[int, int]]] = {}
@@ -94,6 +110,8 @@ def compiler_summary(report: dict) -> list[dict]:
         or report.get("measured") is not True
     ):
         raise ValueError("a measured ForgeML compiler/neural report is required")
+    if report["environment"].get("git_dirty") is not False:
+        raise ValueError("benchmark renders require a clean recorded commit")
     rows = []
     for workload in report["workloads"]:
         for result in workload["correctness"].values():
@@ -117,6 +135,11 @@ def compiler_summary(report: dict) -> list[dict]:
             speedup, workload["timings"]["optimized"]["speedup_vs_eager"], rel_tol=1e-12
         ):
             raise ValueError("speedup disagrees with latency samples")
+        unopt_recorded = workload["timings"]["unoptimized"].get("speedup_vs_eager")
+        if unopt_recorded is not None and not math.isclose(
+            eager / timings["unoptimized"]["median_ms"], unopt_recorded, rel_tol=1e-12
+        ):
+            raise ValueError("unoptimized speedup disagrees with latency samples")
         row = {
             "name": workload["name"],
             "eager_ms": eager,

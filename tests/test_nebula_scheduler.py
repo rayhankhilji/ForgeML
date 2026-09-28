@@ -116,7 +116,7 @@ def test_cancellation_retires_outstanding():
 def test_close_settles_futures():
     async def go():
         e = FakeEngine()
-        b = AsyncBatcher(e, max_batch_size=1, batch_window_ms=50)
+        b = AsyncBatcher(e, max_batch_size=2, batch_window_ms=50)
         t = asyncio.create_task(b.submit([1], 1))
         await asyncio.sleep(0.01)
         await b.close()
@@ -262,6 +262,31 @@ def test_close_drains_inflight():
         gate.set()
         await asyncio.wait_for(closer, 10)
         assert await t == [1]
+        assert e.closed
+
+    run(go())
+
+
+def test_full_batch_fires_immediately():
+    async def go():
+        e = FakeEngine()
+        b = AsyncBatcher(e, max_batch_size=2, batch_window_ms=5000)
+        outs = await asyncio.wait_for(asyncio.gather(b.submit([1], 1), b.submit([2], 1)), 5)
+        assert outs == [[1], [1]]
+        assert len(e.batches) == 1
+        await b.close()
+
+    run(go())
+
+
+def test_engine_closes_after_worker_failure():
+    async def go():
+        e = FakeEngine(fail=RuntimeError("boom"))
+        b = AsyncBatcher(e, batch_window_ms=1)
+        with pytest.raises(RuntimeError):
+            await b.submit([1], 1)
+        assert not b.healthy
+        await b.close()
         assert e.closed
 
     run(go())
