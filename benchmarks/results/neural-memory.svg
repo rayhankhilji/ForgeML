@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="324" viewBox="0 0 1060 324" role="img" aria-labelledby="title desc">
+<title id="title">Compiler-planned intermediate storage</title>
+<desc id="desc">Derived from captured IR plans · excludes inputs, weights, outputs and backend scratch · NOT peak RSS/VRAM</desc>
+<rect width="100%" height="100%" rx="16" fill="#0b1220"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+<text x="28" y="38" fill="#f1f5f9" font-size="21" font-weight="700">Compiler-planned intermediate storage</text>
+<text x="28" y="63" fill="#94a3b8" font-size="12">Derived from captured IR plans · excludes inputs, weights, outputs and backend scratch · NOT peak RSS/VRAM</text>
+<rect x="28" y="82" width="11" height="11" fill="#94a3b8"/>
+<text x="47" y="92" fill="#cbd5e1" font-size="12">Unoptimized / distinct buffers</text>
+<rect x="328" y="82" width="11" height="11" fill="#fbbf24"/>
+<text x="347" y="92" fill="#cbd5e1" font-size="12">Unoptimized / reused slots</text>
+<rect x="628" y="82" width="11" height="11" fill="#67e8f9"/>
+<text x="647" y="92" fill="#cbd5e1" font-size="12">Optimized / reused slots</text>
+<path d="M230.0 115 V288" stroke="#263244" stroke-width="1"/>
+<text x="230.0" y="309" fill="#94a3b8" font-size="11">0.00 KiB</text>
+<path d="M402.5 115 V288" stroke="#263244" stroke-width="1"/>
+<text x="402.5" y="309" fill="#94a3b8" font-size="11">430.08 KiB</text>
+<path d="M575.0 115 V288" stroke="#263244" stroke-width="1"/>
+<text x="575.0" y="309" fill="#94a3b8" font-size="11">860.16 KiB</text>
+<path d="M747.5 115 V288" stroke="#263244" stroke-width="1"/>
+<text x="747.5" y="309" fill="#94a3b8" font-size="11">1290.24 KiB</text>
+<path d="M920.0 115 V288" stroke="#263244" stroke-width="1"/>
+<text x="920.0" y="309" fill="#94a3b8" font-size="11">1720.32 KiB</text>
+<text x="28" y="137" fill="#e2e8f0" font-size="12">transformer_block_4x24x128</text>
+<rect x="230" y="122" width="616.07" height="12" rx="2" fill="#94a3b8"/>
+<text x="853.07" y="133" fill="#cbd5e1" font-size="11">1536.000</text>
+<rect x="230" y="141" width="154.02" height="12" rx="2" fill="#fbbf24"/>
+<text x="391.02" y="152" fill="#cbd5e1" font-size="11">384.000</text>
+<rect x="230" y="160" width="115.51" height="12" rx="2" fill="#67e8f9"/>
+<text x="352.51" y="171" fill="#cbd5e1" font-size="11">288.000</text>
+<text x="28" y="224" fill="#e2e8f0" font-size="12">vision_text_fusion_4x32_16</text>
+<rect x="230" y="209" width="372.21" height="12" rx="2" fill="#94a3b8"/>
+<text x="609.21" y="220" fill="#cbd5e1" font-size="11">928.000</text>
+<rect x="230" y="228" width="214.98" height="12" rx="2" fill="#fbbf24"/>
+<text x="451.98" y="239" fill="#cbd5e1" font-size="11">536.000</text>
+<rect x="230" y="247" width="214.98" height="12" rx="2" fill="#67e8f9"/>
+<text x="451.98" y="258" fill="#cbd5e1" font-size="11">536.000</text>
+</g></svg>

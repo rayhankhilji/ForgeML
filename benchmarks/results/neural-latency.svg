@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1060" height="324" viewBox="0 0 1060 324" role="img" aria-labelledby="title desc">
+<title id="title">CPU latency / raw measurements</title>
+<desc id="desc">x86_64 macOS · PyTorch 2.2.2 · torch.float32 · 1 thread(s) · median of 25 calls</desc>
+<rect width="100%" height="100%" rx="16" fill="#0b1220"/>
+<g font-family="ui-monospace,SFMono-Regular,Consolas,monospace">
+<text x="28" y="38" fill="#f1f5f9" font-size="21" font-weight="700">CPU latency / raw measurements</text>
+<text x="28" y="63" fill="#94a3b8" font-size="12">x86_64 macOS · PyTorch 2.2.2 · torch.float32 · 1 thread(s) · median of 25 calls</text>
+<rect x="28" y="82" width="11" height="11" fill="#94a3b8"/>
+<text x="47" y="92" fill="#cbd5e1" font-size="12">PyTorch eager</text>
+<rect x="328" y="82" width="11" height="11" fill="#fbbf24"/>
+<text x="347" y="92" fill="#cbd5e1" font-size="12">ForgeML unoptimized</text>
+<rect x="628" y="82" width="11" height="11" fill="#67e8f9"/>
+<text x="647" y="92" fill="#cbd5e1" font-size="12">ForgeML optimized</text>
+<path d="M230.0 115 V288" stroke="#263244" stroke-width="1"/>
+<text x="230.0" y="309" fill="#94a3b8" font-size="11">0.00 ms</text>
+<path d="M402.5 115 V288" stroke="#263244" stroke-width="1"/>
+<text x="402.5" y="309" fill="#94a3b8" font-size="11">0.48 ms</text>
+<path d="M575.0 115 V288" stroke="#263244" stroke-width="1"/>
+<text x="575.0" y="309" fill="#94a3b8" font-size="11">0.96 ms</text>
+<path d="M747.5 115 V288" stroke="#263244" stroke-width="1"/>
+<text x="747.5" y="309" fill="#94a3b8" font-size="11">1.44 ms</text>
+<path d="M920.0 115 V288" stroke="#263244" stroke-width="1"/>
+<text x="920.0" y="309" fill="#94a3b8" font-size="11">1.92 ms</text>
+<text x="28" y="137" fill="#e2e8f0" font-size="12">transformer_block_4x24x128</text>
+<rect x="230" y="122" width="466.24" height="12" rx="2" fill="#94a3b8"/>
+<text x="703.24" y="133" fill="#cbd5e1" font-size="11">1.296</text>
+<rect x="230" y="141" width="559.93" height="12" rx="2" fill="#fbbf24"/>
+<text x="796.93" y="152" fill="#cbd5e1" font-size="11">1.556</text>
+<rect x="230" y="160" width="544.54" height="12" rx="2" fill="#67e8f9"/>
+<text x="781.54" y="171" fill="#cbd5e1" font-size="11">1.514</text>
+<text x="28" y="224" fill="#e2e8f0" font-size="12">vision_text_fusion_4x32_16</text>
+<rect x="230" y="209" width="579.43" height="12" rx="2" fill="#94a3b8"/>
+<text x="816.43" y="220" fill="#cbd5e1" font-size="11">1.611</text>
+<rect x="230" y="228" width="595.96" height="12" rx="2" fill="#fbbf24"/>
+<text x="832.96" y="239" fill="#cbd5e1" font-size="11">1.657</text>
+<rect x="230" y="247" width="616.07" height="12" rx="2" fill="#67e8f9"/>
+<text x="853.07" y="258" fill="#cbd5e1" font-size="11">1.712</text>
+</g></svg>

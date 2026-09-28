@@ -450,7 +450,34 @@ A ratio below one is a **slowdown**. These results do not support a blanket CPU 
 
 The memory chart is reconstructed from the captured IR and slot plans, not from an RSS/VRAM sensor. For the smallest MLP, distinct intermediate storage totals 13 KiB, unoptimized slot planning uses 8 KiB, and optimized slot planning uses 5 KiB. For every standard MLP, the five original compute nodes become three; each residual MLP goes from six to four.
 
-Raw samples, plans, correctness tolerances, environment details, and a SHA-256-linked summary are available in [`benchmarks/results/`](benchmarks/results/). The rendering utility rechecks stored medians, sample counts, storage totals, slot capacities, and lifetime overlap before drawing figures. It reads the captured report; it does not rerun the workload to make a nicer chart.
+### Neural workloads
+
+The following capture exercises the expanded compiler path rather than MLP-only graphs. Both workloads passed eager-output comparison before timing.
+
+- **Source:** clean commit `fe347a2341a76671fcf3753556436fb341bf7896`.
+- **Host:** the same x86_64 macOS / Python 3.12.14 / PyTorch 2.2.2 / CPU FP32 / one-thread compatibility environment.
+- **Transformer:** batch 4, sequence 24, hidden 128, 8 heads, causal SDPA, 256-wide tanh-GELU feed-forward path.
+- **Vision/text:** batch 4, 3×32×32 images, 16 int64 tokens, a 16-channel Conv2d path, LayerNorm text path, additive fusion, and a GELU class head.
+
+![Neural workload latency from captured CPU measurements](benchmarks/results/neural-latency.svg)
+
+| Workload | Eager median ms | ForgeML median ms | ForgeML p95 ms | Eager / ForgeML |
+|---|---:|---:|---:|---:|
+| `transformer_block_4x24x128` | 1.296 | 1.514 | 5.917 | 0.856× |
+| `vision_text_fusion_4x32_16` | 1.611 | 1.712 | 2.537 | 0.941× |
+
+Both optimized CPU executors remain slower than eager. The important evidence is semantic coverage and inspectability, not a manufactured speedup: the optimized transformer goes from 30 to 28 nodes, removes 384 KiB of modeled logical traffic, shortens critical-path depth from 22 to 20, and lowers planned intermediate storage from 384 KiB to 288 KiB. The fusion workload goes from 20 to 18 nodes and removes 64 KiB of modeled logical traffic while retaining the same 536 KiB planned storage.
+
+| Workload | Optimized operators | Modeled MFLOPs | Logical KiB | Arithmetic intensity | Critical path |
+|---|---|---:|---:|---:|---:|
+| `transformer_block_4x24x128` | 5 MatMul · 1 fused Linear/GELU · 2 LayerNorm · 1 SDPA | 26.283 | 3493.5 | 7.347 | 20 |
+| `vision_text_fusion_4x32_16` | 3 MatMul · 1 Conv2d · 1 Embedding · 1 LayerNorm · activations | 13.444 | 6000.3 | 2.188 | 12 |
+
+![Neural workload planned intermediate storage](benchmarks/results/neural-memory.svg)
+
+The transformer p95 tail is large relative to its median; that is retained in the raw data rather than smoothed away. These are one-thread CPU interpreter timings, not kernel-level measurements and not evidence of GPU behavior.
+
+Raw samples, plans, correctness tolerances, environment details, static analyses, and SHA-256-linked summaries are available in [`benchmarks/results/`](benchmarks/results/). The rendering utility rechecks stored medians, sample counts, storage totals, slot capacities, view aliases, and lifetime overlap before drawing figures. It reads the captured report; it does not rerun the workload to make a nicer chart.
 
 **No measured GPU or 2/4/8-GPU scaling figures are published.** The illustrative scaling values in the original project idea are not experimental results.
 
