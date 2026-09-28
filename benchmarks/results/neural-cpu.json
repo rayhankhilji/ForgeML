@@ -1,9 +1,9 @@
 {
   "environment": {
-    "captured_at_utc": "2026-09-28T00:32:36.478137+00:00",
+    "captured_at_utc": "2026-09-28T06:03:38.506131+00:00",
     "cuda_runtime": null,
     "device": "cpu",
-    "git_commit": "fe347a2341a76671fcf3753556436fb341bf7896",
+    "git_commit": "af3ef5d27ac748cb47eb34c4c7bc559157413676",
     "git_dirty": false,
     "machine": "x86_64",
     "percentile_method": "linear_interpolation_at_(n-1)*q",
@@ -44,8 +44,8 @@
     {
       "autotuning": null,
       "compile_ms": {
-        "optimized": 506.951826,
-        "unoptimized": 1719.153594
+        "optimized": 412.141263,
+        "unoptimized": 815.426931
       },
       "correctness": {
         "optimized": {
@@ -65,13 +65,13 @@
       "name": "transformer_block_4x24x128",
       "optimized": {
         "analysis": {
-          "arithmetic_intensity": 7.347037355088021,
+          "arithmetic_intensity": 8.517297162767546,
           "constant_bytes": 529920,
-          "critical_path_ops": 20,
+          "critical_path_ops": 17,
           "dominant_nodes": [
             {
               "arithmetic_intensity": 23.296703296703296,
-              "depth": 16,
+              "depth": 14,
               "flops": 6512640,
               "logical_bytes": 279552,
               "name": "gelu",
@@ -82,48 +82,48 @@
               ]
             },
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 17,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "down_matmul_21",
-              "op": "matmul",
+              "arithmetic_intensity": 22.590825688073394,
+              "depth": 15,
+              "flops": 6303744,
+              "logical_bytes": 279040,
+              "name": "down",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "v_matmul_10",
-              "op": "matmul",
+              "flops": 3158016,
+              "logical_bytes": 164352,
+              "name": "v",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "q_matmul_4",
-              "op": "matmul",
+              "flops": 3158016,
+              "logical_bytes": 164352,
+              "name": "q",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
-              "depth": 10,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "o_matmul_13",
-              "op": "matmul",
+              "arithmetic_intensity": 19.214953271028037,
+              "depth": 9,
+              "flops": 3158016,
+              "logical_bytes": 164352,
+              "name": "o",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -132,14 +132,14 @@
           ],
           "flops": 26282880,
           "input_bytes": 49152,
-          "logical_bytes": 3577344,
+          "logical_bytes": 3085824,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
-          "nodes": 28,
+          "nodes": 23,
           "op_counts": {
-            "add": 7,
+            "add": 2,
             "fused_linear_gelu": 1,
             "layer_norm": 2,
-            "matmul": 5,
+            "linear": 5,
             "reshape": 8,
             "sdpa": 1,
             "transpose": 4
@@ -172,24 +172,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "q_matmul_4",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 4,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "q",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -197,7 +185,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 4,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "view",
@@ -211,7 +199,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose",
@@ -224,24 +212,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "k_matmul_7",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 4,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "k",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -249,7 +225,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 4,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "view_1",
@@ -263,7 +239,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose_1",
@@ -276,24 +252,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "v_matmul_10",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 4,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "v",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -301,7 +265,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 4,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "view_2",
@@ -315,7 +279,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose_2",
@@ -329,7 +293,7 @@
             },
             {
               "arithmetic_intensity": 3.369140625,
-              "depth": 7,
+              "depth": 6,
               "flops": 662400,
               "logical_bytes": 196608,
               "name": "scaled_dot_product_attention",
@@ -343,7 +307,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 8,
+              "depth": 7,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose_3",
@@ -357,7 +321,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 9,
+              "depth": 8,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_1",
@@ -368,24 +332,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
-              "depth": 10,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "o_matmul_13",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 11,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "arithmetic_intensity": 19.214953271028037,
+              "depth": 9,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "o",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -393,7 +345,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 12,
+              "depth": 10,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_2",
@@ -406,7 +358,7 @@
             },
             {
               "arithmetic_intensity": 0.08333333333333333,
-              "depth": 13,
+              "depth": 11,
               "flops": 12288,
               "logical_bytes": 147456,
               "name": "add",
@@ -419,7 +371,7 @@
             },
             {
               "arithmetic_intensity": 0.7422680412371134,
-              "depth": 14,
+              "depth": 12,
               "flops": 73728,
               "logical_bytes": 99328,
               "name": "ln2",
@@ -432,7 +384,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 15,
+              "depth": 13,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_3",
@@ -444,7 +396,7 @@
             },
             {
               "arithmetic_intensity": 23.296703296703296,
-              "depth": 16,
+              "depth": 14,
               "flops": 6512640,
               "logical_bytes": 279552,
               "name": "gelu",
@@ -455,24 +407,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 17,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "down_matmul_21",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 18,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "arithmetic_intensity": 22.590825688073394,
+              "depth": 15,
+              "flops": 6303744,
+              "logical_bytes": 279040,
               "name": "down",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -480,7 +420,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 19,
+              "depth": 16,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_4",
@@ -493,7 +433,7 @@
             },
             {
               "arithmetic_intensity": 0.08333333333333333,
-              "depth": 20,
+              "depth": 17,
               "flops": 12288,
               "logical_bytes": 147456,
               "name": "add_1",
@@ -509,14 +449,14 @@
         "backend": "torch",
         "graph": {
           "constants": {
-            "down_bias_22": {
+            "down_bias_16": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128
               ]
             },
-            "down_weight_t_20": {
+            "down_weight_t_15": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -524,14 +464,14 @@
                 128
               ]
             },
-            "k_bias_8": {
+            "k_bias_6": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128
               ]
             },
-            "k_weight_t_6": {
+            "k_weight_t_5": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -553,28 +493,28 @@
                 128
               ]
             },
-            "ln2_bias_16": {
+            "ln2_bias_12": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128
               ]
             },
-            "ln2_weight_15": {
+            "ln2_weight_11": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128
               ]
             },
-            "o_bias_14": {
+            "o_bias_10": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128
               ]
             },
-            "o_weight_t_12": {
+            "o_weight_t_9": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -582,7 +522,7 @@
                 128
               ]
             },
-            "q_bias_5": {
+            "q_bias_4": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -597,14 +537,14 @@
                 128
               ]
             },
-            "up_bias_19": {
+            "up_bias_14": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 256
               ]
             },
-            "up_weight_t_17": {
+            "up_weight_t_13": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -612,14 +552,14 @@
                 256
               ]
             },
-            "v_bias_11": {
+            "v_bias_8": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128
               ]
             },
-            "v_weight_t_9": {
+            "v_weight_t_7": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -689,27 +629,11 @@
               "attrs": {},
               "inputs": [
                 "reshape",
-                "q_weight_t_3"
-              ],
-              "name": "q_matmul_4",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  128
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "q_matmul_4",
-                "q_bias_5"
+                "q_weight_t_3",
+                "q_bias_4"
               ],
               "name": "q",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -769,27 +693,11 @@
               "attrs": {},
               "inputs": [
                 "reshape",
-                "k_weight_t_6"
-              ],
-              "name": "k_matmul_7",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  128
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "k_matmul_7",
-                "k_bias_8"
+                "k_weight_t_5",
+                "k_bias_6"
               ],
               "name": "k",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -849,27 +757,11 @@
               "attrs": {},
               "inputs": [
                 "reshape",
-                "v_weight_t_9"
-              ],
-              "name": "v_matmul_10",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  128
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "v_matmul_10",
-                "v_bias_11"
+                "v_weight_t_7",
+                "v_bias_8"
               ],
               "name": "v",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -994,27 +886,11 @@
               "attrs": {},
               "inputs": [
                 "reshape_1",
-                "o_weight_t_12"
-              ],
-              "name": "o_matmul_13",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  128
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "o_matmul_13",
-                "o_bias_14"
+                "o_weight_t_9",
+                "o_bias_10"
               ],
               "name": "o",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -1074,8 +950,8 @@
               },
               "inputs": [
                 "add",
-                "ln2_weight_15",
-                "ln2_bias_16"
+                "ln2_weight_11",
+                "ln2_bias_12"
               ],
               "name": "ln2",
               "op": "layer_norm",
@@ -1116,8 +992,8 @@
               },
               "inputs": [
                 "reshape_3",
-                "up_weight_t_17",
-                "up_bias_19"
+                "up_weight_t_13",
+                "up_bias_14"
               ],
               "name": "gelu",
               "op": "fused_linear_gelu",
@@ -1134,27 +1010,11 @@
               "attrs": {},
               "inputs": [
                 "gelu",
-                "down_weight_t_20"
-              ],
-              "name": "down_matmul_21",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  128
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "down_matmul_21",
-                "down_bias_22"
+                "down_weight_t_15",
+                "down_bias_16"
               ],
               "name": "down",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -1216,16 +1076,12 @@
           "add": "torch",
           "add_1": "torch",
           "down": "torch",
-          "down_matmul_21": "torch",
           "gelu": "torch",
           "k": "torch",
-          "k_matmul_7": "torch",
           "ln1": "torch",
           "ln2": "torch",
           "o": "torch",
-          "o_matmul_13": "torch",
           "q": "torch",
-          "q_matmul_4": "torch",
           "reshape": "torch",
           "reshape_1": "torch",
           "reshape_2": "torch",
@@ -1237,7 +1093,6 @@
           "transpose_2": "torch",
           "transpose_3": "torch",
           "v": "torch",
-          "v_matmul_10": "torch",
           "view": "torch",
           "view_1": "torch",
           "view_2": "torch"
@@ -1255,121 +1110,91 @@
           },
           "allocations": {
             "add": {
-              "first": 20,
-              "last": 27,
+              "first": 16,
+              "last": 22,
               "size_bytes": 49152,
               "slot": 0
             },
             "down": {
-              "first": 25,
-              "last": 27,
-              "size_bytes": 49152,
-              "slot": 2
-            },
-            "down_matmul_21": {
-              "first": 24,
-              "last": 25,
+              "first": 20,
+              "last": 22,
               "size_bytes": 49152,
               "slot": 1
             },
             "gelu": {
-              "first": 23,
-              "last": 24,
+              "first": 19,
+              "last": 20,
               "size_bytes": 98304,
               "slot": 4
             },
             "k": {
-              "first": 7,
-              "last": 9,
-              "size_bytes": 49152,
-              "slot": 3
-            },
-            "k_matmul_7": {
-              "first": 6,
+              "first": 5,
               "last": 7,
               "size_bytes": 49152,
-              "slot": 2
+              "slot": 1
             },
             "ln1": {
               "first": 0,
-              "last": 10,
+              "last": 8,
               "size_bytes": 49152,
               "slot": 0
             },
             "ln2": {
-              "first": 21,
-              "last": 23,
+              "first": 17,
+              "last": 19,
               "size_bytes": 49152,
               "slot": 1
             },
             "o": {
-              "first": 18,
-              "last": 20,
+              "first": 14,
+              "last": 16,
               "size_bytes": 49152,
               "slot": 1
             },
-            "o_matmul_13": {
-              "first": 17,
-              "last": 18,
-              "size_bytes": 49152,
-              "slot": 0
-            },
             "q": {
-              "first": 3,
-              "last": 5,
-              "size_bytes": 49152,
-              "slot": 2
-            },
-            "q_matmul_4": {
               "first": 2,
-              "last": 3,
+              "last": 4,
               "size_bytes": 49152,
               "slot": 1
             },
             "scaled_dot_product_attention": {
-              "first": 14,
-              "last": 15,
-              "size_bytes": 49152,
-              "slot": 0
-            },
-            "transpose": {
-              "first": 5,
-              "last": 14,
+              "first": 11,
+              "last": 12,
               "size_bytes": 49152,
               "slot": 1
             },
-            "transpose_1": {
-              "first": 9,
-              "last": 14,
+            "transpose": {
+              "first": 4,
+              "last": 11,
               "size_bytes": 49152,
               "slot": 2
             },
-            "transpose_2": {
-              "first": 13,
-              "last": 14,
-              "size_bytes": 49152,
-              "slot": 3
-            },
-            "transpose_3": {
-              "first": 15,
-              "last": 17,
-              "size_bytes": 49152,
-              "slot": 1
-            },
-            "v": {
-              "first": 11,
-              "last": 13,
-              "size_bytes": 49152,
-              "slot": 0
-            },
-            "v_matmul_10": {
-              "first": 10,
+            "transpose_1": {
+              "first": 7,
               "last": 11,
               "size_bytes": 49152,
               "slot": 3
+            },
+            "transpose_2": {
+              "first": 10,
+              "last": 11,
+              "size_bytes": 49152,
+              "slot": 0
+            },
+            "transpose_3": {
+              "first": 12,
+              "last": 14,
+              "size_bytes": 49152,
+              "slot": 0
+            },
+            "v": {
+              "first": 8,
+              "last": 10,
+              "size_bytes": 49152,
+              "slot": 1
             }
           },
-          "naive_bytes": 1376256,
+          "naive_bytes": 1130496,
           "planned_bytes": 294912,
           "slot_specs": {
             "0": {
@@ -1410,73 +1235,73 @@
           }
         },
         "optimization_delta": {
-          "critical_path_ops": 2,
+          "critical_path_ops": 1,
           "flops": 0,
-          "logical_bytes": 393216,
-          "nodes": 2,
-          "planned_bytes": 1081344
+          "logical_bytes": 196608,
+          "nodes": 1,
+          "planned_bytes": 835584
         },
-        "optimized_nodes": 28,
+        "optimized_nodes": 23,
         "original_analysis": {
-          "arithmetic_intensity": 6.619439071566731,
+          "arithmetic_intensity": 8.007136172204024,
           "constant_bytes": 529920,
-          "critical_path_ops": 22,
+          "critical_path_ops": 18,
           "dominant_nodes": [
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 16,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "up_matmul_18",
-              "op": "matmul",
+              "arithmetic_intensity": 22.593406593406595,
+              "depth": 14,
+              "flops": 6316032,
+              "logical_bytes": 279552,
+              "name": "up",
+              "op": "linear",
               "output_shape": [
                 96,
                 256
               ]
             },
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 19,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "down_matmul_21",
-              "op": "matmul",
+              "arithmetic_intensity": 22.590825688073394,
+              "depth": 16,
+              "flops": 6303744,
+              "logical_bytes": 279040,
+              "name": "down",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "v_matmul_10",
-              "op": "matmul",
+              "flops": 3158016,
+              "logical_bytes": 164352,
+              "name": "v",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "q_matmul_4",
-              "op": "matmul",
+              "flops": 3158016,
+              "logical_bytes": 164352,
+              "name": "q",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
-              "depth": 10,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "o_matmul_13",
-              "op": "matmul",
+              "arithmetic_intensity": 19.214953271028037,
+              "depth": 9,
+              "flops": 3158016,
+              "logical_bytes": 164352,
+              "name": "o",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -1485,14 +1310,14 @@
           ],
           "flops": 26282880,
           "input_bytes": 49152,
-          "logical_bytes": 3970560,
+          "logical_bytes": 3282432,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
-          "nodes": 30,
+          "nodes": 24,
           "op_counts": {
-            "add": 8,
+            "add": 2,
             "gelu": 1,
             "layer_norm": 2,
-            "matmul": 6,
+            "linear": 6,
             "reshape": 8,
             "sdpa": 1,
             "transpose": 4
@@ -1525,24 +1350,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "q_matmul_4",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 4,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "q",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -1550,7 +1363,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 4,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "view",
@@ -1564,7 +1377,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose",
@@ -1577,24 +1390,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "k_matmul_7",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 4,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "k",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -1602,7 +1403,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 4,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "view_1",
@@ -1616,7 +1417,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose_1",
@@ -1629,24 +1430,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "v_matmul_10",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 4,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "v",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -1654,7 +1443,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 4,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "view_2",
@@ -1668,7 +1457,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose_2",
@@ -1682,7 +1471,7 @@
             },
             {
               "arithmetic_intensity": 3.369140625,
-              "depth": 7,
+              "depth": 6,
               "flops": 662400,
               "logical_bytes": 196608,
               "name": "scaled_dot_product_attention",
@@ -1696,7 +1485,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 8,
+              "depth": 7,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose_3",
@@ -1710,7 +1499,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 9,
+              "depth": 8,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_1",
@@ -1721,24 +1510,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
-              "depth": 10,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "o_matmul_13",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 11,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "arithmetic_intensity": 19.214953271028037,
+              "depth": 9,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "o",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -1746,7 +1523,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 12,
+              "depth": 10,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_2",
@@ -1759,7 +1536,7 @@
             },
             {
               "arithmetic_intensity": 0.08333333333333333,
-              "depth": 13,
+              "depth": 11,
               "flops": 12288,
               "logical_bytes": 147456,
               "name": "add",
@@ -1772,7 +1549,7 @@
             },
             {
               "arithmetic_intensity": 0.7422680412371134,
-              "depth": 14,
+              "depth": 12,
               "flops": 73728,
               "logical_bytes": 99328,
               "name": "ln2",
@@ -1785,7 +1562,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 15,
+              "depth": 13,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_3",
@@ -1796,24 +1573,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 16,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "up_matmul_18",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                256
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 17,
-              "flops": 24576,
-              "logical_bytes": 197632,
+              "arithmetic_intensity": 22.593406593406595,
+              "depth": 14,
+              "flops": 6316032,
+              "logical_bytes": 279552,
               "name": "up",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 256
@@ -1821,7 +1586,7 @@
             },
             {
               "arithmetic_intensity": 1.0,
-              "depth": 18,
+              "depth": 15,
               "flops": 196608,
               "logical_bytes": 196608,
               "name": "gelu",
@@ -1832,24 +1597,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 19,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "down_matmul_21",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 20,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "arithmetic_intensity": 22.590825688073394,
+              "depth": 16,
+              "flops": 6303744,
+              "logical_bytes": 279040,
               "name": "down",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -1857,7 +1610,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 21,
+              "depth": 17,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_4",
@@ -1870,7 +1623,7 @@
             },
             {
               "arithmetic_intensity": 0.08333333333333333,
-              "depth": 22,
+              "depth": 18,
               "flops": 12288,
               "logical_bytes": 147456,
               "name": "add_1",
@@ -1883,218 +1636,223 @@
             }
           ]
         },
-        "original_nodes": 30,
+        "original_nodes": 24,
         "passes": [
           {
             "name": "eliminate_dead_nodes",
-            "nodes_after": 30,
-            "nodes_before": 30
+            "nodes_after": 24,
+            "nodes_before": 24
           },
           {
             "name": "fold_constants",
-            "nodes_after": 30,
-            "nodes_before": 30
+            "nodes_after": 24,
+            "nodes_before": 24
           },
           {
             "name": "eliminate_dead_nodes",
-            "nodes_after": 30,
-            "nodes_before": 30
+            "nodes_after": 24,
+            "nodes_before": 24
           },
           {
             "name": "simplify_algebra",
-            "nodes_after": 30,
-            "nodes_before": 30
+            "nodes_after": 24,
+            "nodes_before": 24
           },
           {
             "name": "common_subexpression_elimination",
-            "nodes_after": 30,
-            "nodes_before": 30
+            "nodes_after": 24,
+            "nodes_before": 24
+          },
+          {
+            "name": "canonicalize_linear",
+            "nodes_after": 24,
+            "nodes_before": 24
           },
           {
             "name": "fuse_linear_gelu",
-            "nodes_after": 28,
-            "nodes_before": 30
+            "nodes_after": 23,
+            "nodes_before": 24
           },
           {
             "name": "eliminate_dead_nodes",
-            "nodes_after": 28,
-            "nodes_before": 28
+            "nodes_after": 23,
+            "nodes_before": 23
           },
           {
             "name": "schedule",
-            "nodes_after": 28,
-            "nodes_before": 28
+            "nodes_after": 23,
+            "nodes_before": 23
           }
         ]
       },
       "timings": {
         "eager": {
           "count": 25,
-          "max_ms": 7.892715,
-          "median_ms": 1.29599,
-          "min_ms": 1.050271,
-          "p95_ms": 1.8231659999999994,
+          "max_ms": 2.179346,
+          "median_ms": 1.326847,
+          "min_ms": 1.098741,
+          "p95_ms": 1.8787078,
           "samples_ms": [
-            1.296073,
-            1.350472,
-            1.144211,
-            1.165068,
-            1.124814,
-            1.208712,
-            1.15389,
-            1.4755,
-            1.050271,
-            1.084597,
-            1.299899,
-            1.233555,
-            1.401071,
-            7.892715,
-            1.29599,
-            1.869008,
-            1.314166,
-            1.639798,
-            1.145055,
-            1.323447,
-            1.444283,
-            1.290296,
-            1.063646,
-            1.219072,
-            1.445065
+            1.315124,
+            1.36371,
+            1.41648,
+            1.303876,
+            2.179346,
+            1.571126,
+            1.294219,
+            1.367506,
+            1.459076,
+            1.867063,
+            1.264018,
+            1.271065,
+            1.159768,
+            1.296216,
+            1.260166,
+            1.470574,
+            1.326847,
+            1.881619,
+            1.294814,
+            1.260361,
+            1.363105,
+            1.645684,
+            1.098741,
+            1.267059,
+            1.436187
           ],
           "speedup_vs_eager": 1.0
         },
         "optimized": {
           "count": 25,
-          "max_ms": 7.544536,
-          "median_ms": 1.513644,
-          "min_ms": 1.307343,
-          "p95_ms": 5.917320599999991,
+          "max_ms": 2.040144,
+          "median_ms": 1.560164,
+          "min_ms": 1.292239,
+          "p95_ms": 1.9416352,
           "samples_ms": [
-            1.904755,
-            3.472283,
-            1.416057,
-            1.40669,
-            1.409674,
-            1.527303,
-            1.537137,
-            1.408974,
-            1.6562,
-            1.336487,
-            1.608553,
-            1.720391,
-            1.375729,
-            1.459317,
-            6.52858,
-            1.318735,
-            1.71351,
-            1.398495,
-            1.481662,
-            1.432582,
-            1.895015,
-            1.525144,
-            1.307343,
-            1.513644,
-            7.544536
+            1.800371,
+            1.495572,
+            1.638622,
+            1.383851,
+            1.892188,
+            1.781074,
+            1.461865,
+            1.560164,
+            1.61354,
+            1.454222,
+            1.448708,
+            1.292239,
+            1.662706,
+            1.535345,
+            1.556091,
+            1.586869,
+            1.613959,
+            2.040144,
+            1.795426,
+            1.50702,
+            1.592312,
+            1.322642,
+            1.368054,
+            1.953997,
+            1.444956
           ],
-          "speedup_vs_eager": 0.8562052900153536
+          "speedup_vs_eager": 0.8504535420635266
         },
         "unoptimized": {
           "count": 25,
-          "max_ms": 4.685597,
-          "median_ms": 1.556421,
-          "min_ms": 1.345289,
-          "p95_ms": 2.7162461999999983,
+          "max_ms": 2.246551,
+          "median_ms": 1.620027,
+          "min_ms": 1.248354,
+          "p95_ms": 2.0014901999999997,
           "samples_ms": [
-            1.556421,
-            1.356431,
-            1.54148,
-            1.58746,
-            1.868032,
-            1.561911,
-            1.832218,
-            1.526448,
-            1.540984,
-            1.405356,
-            1.371708,
-            2.169435,
-            1.491736,
-            1.345289,
-            2.852949,
-            1.490627,
-            1.412473,
-            1.483566,
-            1.541008,
-            1.626316,
-            1.713322,
-            1.67967,
-            4.685597,
-            1.872988,
-            1.558382
+            1.544057,
+            1.594426,
+            1.558878,
+            1.745923,
+            1.371387,
+            1.873627,
+            1.976131,
+            1.565985,
+            1.644536,
+            1.620027,
+            1.543021,
+            1.719878,
+            1.576255,
+            1.646935,
+            1.757642,
+            1.6905,
+            2.246551,
+            1.835283,
+            1.582074,
+            1.44378,
+            1.685138,
+            1.41921,
+            1.248354,
+            1.551611,
+            2.00783
           ],
-          "speedup_vs_eager": 0.8326731649084662
+          "speedup_vs_eager": 0.8190277075628987
         }
       },
       "unoptimized": {
         "analysis": {
-          "arithmetic_intensity": 6.619439071566731,
+          "arithmetic_intensity": 8.007136172204024,
           "constant_bytes": 529920,
-          "critical_path_ops": 22,
+          "critical_path_ops": 18,
           "dominant_nodes": [
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 16,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "up_matmul_18",
-              "op": "matmul",
+              "arithmetic_intensity": 22.593406593406595,
+              "depth": 14,
+              "flops": 6316032,
+              "logical_bytes": 279552,
+              "name": "up",
+              "op": "linear",
               "output_shape": [
                 96,
                 256
               ]
             },
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 19,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "down_matmul_21",
-              "op": "matmul",
+              "arithmetic_intensity": 22.590825688073394,
+              "depth": 16,
+              "flops": 6303744,
+              "logical_bytes": 279040,
+              "name": "down",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "v_matmul_10",
-              "op": "matmul",
+              "flops": 3158016,
+              "logical_bytes": 164352,
+              "name": "v",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "q_matmul_4",
-              "op": "matmul",
+              "flops": 3158016,
+              "logical_bytes": 164352,
+              "name": "q",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
-              "depth": 10,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "o_matmul_13",
-              "op": "matmul",
+              "arithmetic_intensity": 19.214953271028037,
+              "depth": 9,
+              "flops": 3158016,
+              "logical_bytes": 164352,
+              "name": "o",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -2103,14 +1861,14 @@
           ],
           "flops": 26282880,
           "input_bytes": 49152,
-          "logical_bytes": 3970560,
+          "logical_bytes": 3282432,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
-          "nodes": 30,
+          "nodes": 24,
           "op_counts": {
-            "add": 8,
+            "add": 2,
             "gelu": 1,
             "layer_norm": 2,
-            "matmul": 6,
+            "linear": 6,
             "reshape": 8,
             "sdpa": 1,
             "transpose": 4
@@ -2143,24 +1901,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "q_matmul_4",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 4,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "q",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -2168,7 +1914,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 4,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "view",
@@ -2182,7 +1928,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose",
@@ -2195,24 +1941,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "k_matmul_7",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 4,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "k",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -2220,7 +1954,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 4,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "view_1",
@@ -2234,7 +1968,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose_1",
@@ -2247,24 +1981,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "v_matmul_10",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 4,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "v",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -2272,7 +1994,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 4,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "view_2",
@@ -2286,7 +2008,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose_2",
@@ -2300,7 +2022,7 @@
             },
             {
               "arithmetic_intensity": 3.369140625,
-              "depth": 7,
+              "depth": 6,
               "flops": 662400,
               "logical_bytes": 196608,
               "name": "scaled_dot_product_attention",
@@ -2314,7 +2036,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 8,
+              "depth": 7,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose_3",
@@ -2328,7 +2050,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 9,
+              "depth": 8,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_1",
@@ -2339,24 +2061,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
-              "depth": 10,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "o_matmul_13",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 11,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "arithmetic_intensity": 19.214953271028037,
+              "depth": 9,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "o",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -2364,7 +2074,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 12,
+              "depth": 10,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_2",
@@ -2377,7 +2087,7 @@
             },
             {
               "arithmetic_intensity": 0.08333333333333333,
-              "depth": 13,
+              "depth": 11,
               "flops": 12288,
               "logical_bytes": 147456,
               "name": "add",
@@ -2390,7 +2100,7 @@
             },
             {
               "arithmetic_intensity": 0.7422680412371134,
-              "depth": 14,
+              "depth": 12,
               "flops": 73728,
               "logical_bytes": 99328,
               "name": "ln2",
@@ -2403,7 +2113,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 15,
+              "depth": 13,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_3",
@@ -2414,24 +2124,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 16,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "up_matmul_18",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                256
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 17,
-              "flops": 24576,
-              "logical_bytes": 197632,
+              "arithmetic_intensity": 22.593406593406595,
+              "depth": 14,
+              "flops": 6316032,
+              "logical_bytes": 279552,
               "name": "up",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 256
@@ -2439,7 +2137,7 @@
             },
             {
               "arithmetic_intensity": 1.0,
-              "depth": 18,
+              "depth": 15,
               "flops": 196608,
               "logical_bytes": 196608,
               "name": "gelu",
@@ -2450,24 +2148,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 19,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "down_matmul_21",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 20,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "arithmetic_intensity": 22.590825688073394,
+              "depth": 16,
+              "flops": 6303744,
+              "logical_bytes": 279040,
               "name": "down",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -2475,7 +2161,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 21,
+              "depth": 17,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_4",
@@ -2488,7 +2174,7 @@
             },
             {
               "arithmetic_intensity": 0.08333333333333333,
-              "depth": 22,
+              "depth": 18,
               "flops": 12288,
               "logical_bytes": 147456,
               "name": "add_1",
@@ -2504,14 +2190,14 @@
         "backend": "torch",
         "graph": {
           "constants": {
-            "down_bias_22": {
+            "down_bias_16": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128
               ]
             },
-            "down_weight_t_20": {
+            "down_weight_t_15": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -2519,14 +2205,14 @@
                 128
               ]
             },
-            "k_bias_8": {
+            "k_bias_6": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128
               ]
             },
-            "k_weight_t_6": {
+            "k_weight_t_5": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -2548,28 +2234,28 @@
                 128
               ]
             },
-            "ln2_bias_16": {
+            "ln2_bias_12": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128
               ]
             },
-            "ln2_weight_15": {
+            "ln2_weight_11": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128
               ]
             },
-            "o_bias_14": {
+            "o_bias_10": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128
               ]
             },
-            "o_weight_t_12": {
+            "o_weight_t_9": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -2577,7 +2263,7 @@
                 128
               ]
             },
-            "q_bias_5": {
+            "q_bias_4": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -2592,14 +2278,14 @@
                 128
               ]
             },
-            "up_bias_19": {
+            "up_bias_14": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 256
               ]
             },
-            "up_weight_t_17": {
+            "up_weight_t_13": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -2607,14 +2293,14 @@
                 256
               ]
             },
-            "v_bias_11": {
+            "v_bias_8": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 128
               ]
             },
-            "v_weight_t_9": {
+            "v_weight_t_7": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -2684,27 +2370,11 @@
               "attrs": {},
               "inputs": [
                 "reshape",
-                "q_weight_t_3"
-              ],
-              "name": "q_matmul_4",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  128
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "q_matmul_4",
-                "q_bias_5"
+                "q_weight_t_3",
+                "q_bias_4"
               ],
               "name": "q",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -2764,27 +2434,11 @@
               "attrs": {},
               "inputs": [
                 "reshape",
-                "k_weight_t_6"
-              ],
-              "name": "k_matmul_7",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  128
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "k_matmul_7",
-                "k_bias_8"
+                "k_weight_t_5",
+                "k_bias_6"
               ],
               "name": "k",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -2844,27 +2498,11 @@
               "attrs": {},
               "inputs": [
                 "reshape",
-                "v_weight_t_9"
-              ],
-              "name": "v_matmul_10",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  128
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "v_matmul_10",
-                "v_bias_11"
+                "v_weight_t_7",
+                "v_bias_8"
               ],
               "name": "v",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -2989,27 +2627,11 @@
               "attrs": {},
               "inputs": [
                 "reshape_1",
-                "o_weight_t_12"
-              ],
-              "name": "o_matmul_13",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  128
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "o_matmul_13",
-                "o_bias_14"
+                "o_weight_t_9",
+                "o_bias_10"
               ],
               "name": "o",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -3069,8 +2691,8 @@
               },
               "inputs": [
                 "add",
-                "ln2_weight_15",
-                "ln2_bias_16"
+                "ln2_weight_11",
+                "ln2_bias_12"
               ],
               "name": "ln2",
               "op": "layer_norm",
@@ -3109,27 +2731,11 @@
               "attrs": {},
               "inputs": [
                 "reshape_3",
-                "up_weight_t_17"
-              ],
-              "name": "up_matmul_18",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  256
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "up_matmul_18",
-                "up_bias_19"
+                "up_weight_t_13",
+                "up_bias_14"
               ],
               "name": "up",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -3161,27 +2767,11 @@
               "attrs": {},
               "inputs": [
                 "gelu",
-                "down_weight_t_20"
-              ],
-              "name": "down_matmul_21",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  96,
-                  128
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "down_matmul_21",
-                "down_bias_22"
+                "down_weight_t_15",
+                "down_bias_16"
               ],
               "name": "down",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -3243,16 +2833,12 @@
           "add": "torch",
           "add_1": "torch",
           "down": "torch",
-          "down_matmul_21": "torch",
           "gelu": "torch",
           "k": "torch",
-          "k_matmul_7": "torch",
           "ln1": "torch",
           "ln2": "torch",
           "o": "torch",
-          "o_matmul_13": "torch",
           "q": "torch",
-          "q_matmul_4": "torch",
           "reshape": "torch",
           "reshape_1": "torch",
           "reshape_2": "torch",
@@ -3264,9 +2850,7 @@
           "transpose_2": "torch",
           "transpose_3": "torch",
           "up": "torch",
-          "up_matmul_18": "torch",
           "v": "torch",
-          "v_matmul_10": "torch",
           "view": "torch",
           "view_1": "torch",
           "view_2": "torch"
@@ -3284,133 +2868,97 @@
           },
           "allocations": {
             "add": {
-              "first": 20,
-              "last": 29,
+              "first": 16,
+              "last": 23,
               "size_bytes": 49152,
               "slot": 0
             },
             "down": {
-              "first": 27,
-              "last": 29,
-              "size_bytes": 49152,
-              "slot": 2
-            },
-            "down_matmul_21": {
-              "first": 26,
-              "last": 27,
-              "size_bytes": 49152,
-              "slot": 1
-            },
-            "gelu": {
-              "first": 25,
-              "last": 26,
-              "size_bytes": 98304,
-              "slot": 4
-            },
-            "k": {
-              "first": 7,
-              "last": 9,
-              "size_bytes": 49152,
-              "slot": 3
-            },
-            "k_matmul_7": {
-              "first": 6,
-              "last": 7,
-              "size_bytes": 49152,
-              "slot": 2
-            },
-            "ln1": {
-              "first": 0,
-              "last": 10,
-              "size_bytes": 49152,
-              "slot": 0
-            },
-            "ln2": {
               "first": 21,
               "last": 23,
               "size_bytes": 49152,
               "slot": 1
             },
-            "o": {
-              "first": 18,
-              "last": 20,
+            "gelu": {
+              "first": 20,
+              "last": 21,
+              "size_bytes": 98304,
+              "slot": 5
+            },
+            "k": {
+              "first": 5,
+              "last": 7,
               "size_bytes": 49152,
               "slot": 1
             },
-            "o_matmul_13": {
-              "first": 17,
-              "last": 18,
+            "ln1": {
+              "first": 0,
+              "last": 8,
               "size_bytes": 49152,
               "slot": 0
             },
-            "q": {
-              "first": 3,
-              "last": 5,
+            "ln2": {
+              "first": 17,
+              "last": 19,
               "size_bytes": 49152,
-              "slot": 2
+              "slot": 1
             },
-            "q_matmul_4": {
+            "o": {
+              "first": 14,
+              "last": 16,
+              "size_bytes": 49152,
+              "slot": 1
+            },
+            "q": {
               "first": 2,
-              "last": 3,
+              "last": 4,
               "size_bytes": 49152,
               "slot": 1
             },
             "scaled_dot_product_attention": {
-              "first": 14,
-              "last": 15,
-              "size_bytes": 49152,
-              "slot": 0
-            },
-            "transpose": {
-              "first": 5,
-              "last": 14,
+              "first": 11,
+              "last": 12,
               "size_bytes": 49152,
               "slot": 1
             },
-            "transpose_1": {
-              "first": 9,
-              "last": 14,
+            "transpose": {
+              "first": 4,
+              "last": 11,
               "size_bytes": 49152,
               "slot": 2
             },
-            "transpose_2": {
-              "first": 13,
-              "last": 14,
+            "transpose_1": {
+              "first": 7,
+              "last": 11,
               "size_bytes": 49152,
               "slot": 3
             },
-            "transpose_3": {
-              "first": 15,
-              "last": 17,
+            "transpose_2": {
+              "first": 10,
+              "last": 11,
               "size_bytes": 49152,
-              "slot": 1
+              "slot": 0
+            },
+            "transpose_3": {
+              "first": 12,
+              "last": 14,
+              "size_bytes": 49152,
+              "slot": 0
             },
             "up": {
-              "first": 24,
-              "last": 25,
-              "size_bytes": 98304,
-              "slot": 5
-            },
-            "up_matmul_18": {
-              "first": 23,
-              "last": 24,
+              "first": 19,
+              "last": 20,
               "size_bytes": 98304,
               "slot": 4
             },
             "v": {
-              "first": 11,
-              "last": 13,
+              "first": 8,
+              "last": 10,
               "size_bytes": 49152,
-              "slot": 0
-            },
-            "v_matmul_10": {
-              "first": 10,
-              "last": 11,
-              "size_bytes": 49152,
-              "slot": 3
+              "slot": 1
             }
           },
-          "naive_bytes": 1572864,
+          "naive_bytes": 1228800,
           "planned_bytes": 393216,
           "slot_specs": {
             "0": {
@@ -3462,69 +3010,69 @@
           "flops": 0,
           "logical_bytes": 0,
           "nodes": 0,
-          "planned_bytes": 1179648
+          "planned_bytes": 835584
         },
-        "optimized_nodes": 30,
+        "optimized_nodes": 24,
         "original_analysis": {
-          "arithmetic_intensity": 6.619439071566731,
+          "arithmetic_intensity": 8.007136172204024,
           "constant_bytes": 529920,
-          "critical_path_ops": 22,
+          "critical_path_ops": 18,
           "dominant_nodes": [
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 16,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "up_matmul_18",
-              "op": "matmul",
+              "arithmetic_intensity": 22.593406593406595,
+              "depth": 14,
+              "flops": 6316032,
+              "logical_bytes": 279552,
+              "name": "up",
+              "op": "linear",
               "output_shape": [
                 96,
                 256
               ]
             },
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 19,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "down_matmul_21",
-              "op": "matmul",
+              "arithmetic_intensity": 22.590825688073394,
+              "depth": 16,
+              "flops": 6303744,
+              "logical_bytes": 279040,
+              "name": "down",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "v_matmul_10",
-              "op": "matmul",
+              "flops": 3158016,
+              "logical_bytes": 164352,
+              "name": "v",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "q_matmul_4",
-              "op": "matmul",
+              "flops": 3158016,
+              "logical_bytes": 164352,
+              "name": "q",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
-              "depth": 10,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "o_matmul_13",
-              "op": "matmul",
+              "arithmetic_intensity": 19.214953271028037,
+              "depth": 9,
+              "flops": 3158016,
+              "logical_bytes": 164352,
+              "name": "o",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -3533,14 +3081,14 @@
           ],
           "flops": 26282880,
           "input_bytes": 49152,
-          "logical_bytes": 3970560,
+          "logical_bytes": 3282432,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
-          "nodes": 30,
+          "nodes": 24,
           "op_counts": {
-            "add": 8,
+            "add": 2,
             "gelu": 1,
             "layer_norm": 2,
-            "matmul": 6,
+            "linear": 6,
             "reshape": 8,
             "sdpa": 1,
             "transpose": 4
@@ -3573,24 +3121,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "q_matmul_4",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 4,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "q",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -3598,7 +3134,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 4,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "view",
@@ -3612,7 +3148,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose",
@@ -3625,24 +3161,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "k_matmul_7",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 4,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "k",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -3650,7 +3174,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 4,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "view_1",
@@ -3664,7 +3188,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose_1",
@@ -3677,24 +3201,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
+              "arithmetic_intensity": 19.214953271028037,
               "depth": 3,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "v_matmul_10",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 4,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "v",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -3702,7 +3214,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 5,
+              "depth": 4,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "view_2",
@@ -3716,7 +3228,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose_2",
@@ -3730,7 +3242,7 @@
             },
             {
               "arithmetic_intensity": 3.369140625,
-              "depth": 7,
+              "depth": 6,
               "flops": 662400,
               "logical_bytes": 196608,
               "name": "scaled_dot_product_attention",
@@ -3744,7 +3256,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 8,
+              "depth": 7,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "transpose_3",
@@ -3758,7 +3270,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 9,
+              "depth": 8,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_1",
@@ -3769,24 +3281,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 19.2,
-              "depth": 10,
-              "flops": 3145728,
-              "logical_bytes": 163840,
-              "name": "o_matmul_13",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 11,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "arithmetic_intensity": 19.214953271028037,
+              "depth": 9,
+              "flops": 3158016,
+              "logical_bytes": 164352,
               "name": "o",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -3794,7 +3294,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 12,
+              "depth": 10,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_2",
@@ -3807,7 +3307,7 @@
             },
             {
               "arithmetic_intensity": 0.08333333333333333,
-              "depth": 13,
+              "depth": 11,
               "flops": 12288,
               "logical_bytes": 147456,
               "name": "add",
@@ -3820,7 +3320,7 @@
             },
             {
               "arithmetic_intensity": 0.7422680412371134,
-              "depth": 14,
+              "depth": 12,
               "flops": 73728,
               "logical_bytes": 99328,
               "name": "ln2",
@@ -3833,7 +3333,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 15,
+              "depth": 13,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_3",
@@ -3844,24 +3344,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 16,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "up_matmul_18",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                256
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 17,
-              "flops": 24576,
-              "logical_bytes": 197632,
+              "arithmetic_intensity": 22.593406593406595,
+              "depth": 14,
+              "flops": 6316032,
+              "logical_bytes": 279552,
               "name": "up",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 256
@@ -3869,7 +3357,7 @@
             },
             {
               "arithmetic_intensity": 1.0,
-              "depth": 18,
+              "depth": 15,
               "flops": 196608,
               "logical_bytes": 196608,
               "name": "gelu",
@@ -3880,24 +3368,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 22.58823529411765,
-              "depth": 19,
-              "flops": 6291456,
-              "logical_bytes": 278528,
-              "name": "down_matmul_21",
-              "op": "matmul",
-              "output_shape": [
-                96,
-                128
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12435233160621761,
-              "depth": 20,
-              "flops": 12288,
-              "logical_bytes": 98816,
+              "arithmetic_intensity": 22.590825688073394,
+              "depth": 16,
+              "flops": 6303744,
+              "logical_bytes": 279040,
               "name": "down",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 96,
                 128
@@ -3905,7 +3381,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 21,
+              "depth": 17,
               "flops": 0,
               "logical_bytes": 98304,
               "name": "reshape_4",
@@ -3918,7 +3394,7 @@
             },
             {
               "arithmetic_intensity": 0.08333333333333333,
-              "depth": 22,
+              "depth": 18,
               "flops": 12288,
               "logical_bytes": 147456,
               "name": "add_1",
@@ -3931,15 +3407,15 @@
             }
           ]
         },
-        "original_nodes": 30,
+        "original_nodes": 24,
         "passes": []
       }
     },
     {
       "autotuning": null,
       "compile_ms": {
-        "optimized": 321.354131,
-        "unoptimized": 213.218564
+        "optimized": 326.083691,
+        "unoptimized": 58.665179
       },
       "correctness": {
         "optimized": {
@@ -3959,17 +3435,17 @@
       "name": "vision_text_fusion_4x32_16",
       "optimized": {
         "analysis": {
-          "arithmetic_intensity": 2.188040419927686,
+          "arithmetic_intensity": 2.2023550380383856,
           "constant_bytes": 4257064,
-          "critical_path_ops": 12,
+          "critical_path_ops": 10,
           "dominant_nodes": [
             {
-              "arithmetic_intensity": 1.8819205145876408,
+              "arithmetic_intensity": 1.8818698673404928,
               "depth": 4,
-              "flops": 8388608,
-              "logical_bytes": 4457472,
-              "name": "vision_head_matmul_4",
-              "op": "matmul",
+              "flops": 8388864,
+              "logical_bytes": 4457728,
+              "name": "vision_head",
+              "op": "linear",
               "output_shape": [
                 4,
                 64
@@ -3991,7 +3467,7 @@
             },
             {
               "arithmetic_intensity": 11.357512953367875,
-              "depth": 9,
+              "depth": 8,
               "flops": 561152,
               "logical_bytes": 49408,
               "name": "fusion_1",
@@ -4016,12 +3492,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 8.0,
+              "arithmetic_intensity": 8.062015503875969,
               "depth": 4,
-              "flops": 262144,
-              "logical_bytes": 32768,
-              "name": "text_head_matmul_10",
-              "op": "matmul",
+              "flops": 266240,
+              "logical_bytes": 33024,
+              "name": "text_head",
+              "op": "linear",
               "output_shape": [
                 64,
                 64
@@ -4030,17 +3506,17 @@
           ],
           "flops": 13443968,
           "input_bytes": 49664,
-          "logical_bytes": 6144296,
+          "logical_bytes": 6104360,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
-          "nodes": 18,
+          "nodes": 15,
           "op_counts": {
-            "add": 4,
+            "add": 1,
             "conv2d": 1,
             "embedding": 1,
             "fused_linear_gelu": 1,
             "gelu": 1,
             "layer_norm": 1,
-            "matmul": 3,
+            "linear": 3,
             "reshape": 6
           },
           "output_bytes": 2560,
@@ -4086,24 +3562,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 1.8819205145876408,
+              "arithmetic_intensity": 1.8818698673404928,
               "depth": 4,
-              "flops": 8388608,
-              "logical_bytes": 4457472,
-              "name": "vision_head_matmul_4",
-              "op": "matmul",
-              "output_shape": [
-                4,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.1111111111111111,
-              "depth": 5,
-              "flops": 256,
-              "logical_bytes": 2304,
+              "flops": 8388864,
+              "logical_bytes": 4457728,
               "name": "vision_head",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 4,
                 64
@@ -4111,7 +3575,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 2048,
               "name": "reshape_1",
@@ -4160,24 +3624,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 8.0,
+              "arithmetic_intensity": 8.062015503875969,
               "depth": 4,
-              "flops": 262144,
-              "logical_bytes": 32768,
-              "name": "text_head_matmul_10",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12403100775193798,
-              "depth": 5,
-              "flops": 4096,
+              "flops": 266240,
               "logical_bytes": 33024,
               "name": "text_head",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 64,
                 64
@@ -4185,7 +3637,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 32768,
               "name": "reshape_3",
@@ -4198,7 +3650,7 @@
             },
             {
               "arithmetic_intensity": 0.12121212121212122,
-              "depth": 7,
+              "depth": 6,
               "flops": 4096,
               "logical_bytes": 33792,
               "name": "add",
@@ -4211,7 +3663,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 8,
+              "depth": 7,
               "flops": 0,
               "logical_bytes": 32768,
               "name": "reshape_4",
@@ -4223,7 +3675,7 @@
             },
             {
               "arithmetic_intensity": 11.357512953367875,
-              "depth": 9,
+              "depth": 8,
               "flops": 561152,
               "logical_bytes": 49408,
               "name": "fusion_1",
@@ -4234,24 +3686,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 3.8095238095238093,
-              "depth": 10,
-              "flops": 81920,
-              "logical_bytes": 21504,
-              "name": "fusion_2_matmul_16",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                10
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12403100775193798,
-              "depth": 11,
-              "flops": 640,
-              "logical_bytes": 5160,
+              "arithmetic_intensity": 3.8321574452283698,
+              "depth": 9,
+              "flops": 82560,
+              "logical_bytes": 21544,
               "name": "fusion_2",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 64,
                 10
@@ -4259,7 +3699,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 12,
+              "depth": 10,
               "flops": 0,
               "logical_bytes": 5120,
               "name": "reshape_5",
@@ -4275,14 +3715,14 @@
         "backend": "torch",
         "graph": {
           "constants": {
-            "fusion_0_bias_14": {
+            "fusion_0_bias_11": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 64
               ]
             },
-            "fusion_0_weight_t_12": {
+            "fusion_0_weight_t_10": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -4290,14 +3730,14 @@
                 64
               ]
             },
-            "fusion_2_bias_17": {
+            "fusion_2_bias_13": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 10
               ]
             },
-            "fusion_2_weight_t_15": {
+            "fusion_2_weight_t_12": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -4305,7 +3745,7 @@
                 10
               ]
             },
-            "text_embedding_weight_6": {
+            "text_embedding_weight_5": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -4313,14 +3753,14 @@
                 32
               ]
             },
-            "text_head_bias_11": {
+            "text_head_bias_9": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 64
               ]
             },
-            "text_head_weight_t_9": {
+            "text_head_weight_t_8": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -4328,14 +3768,14 @@
                 64
               ]
             },
-            "text_norm_bias_8": {
+            "text_norm_bias_7": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 32
               ]
             },
-            "text_norm_weight_7": {
+            "text_norm_weight_6": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -4349,7 +3789,7 @@
                 16
               ]
             },
-            "vision_head_bias_5": {
+            "vision_head_bias_4": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -4475,27 +3915,11 @@
               "attrs": {},
               "inputs": [
                 "reshape",
-                "vision_head_weight_t_3"
-              ],
-              "name": "vision_head_matmul_4",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  4,
-                  64
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "vision_head_matmul_4",
-                "vision_head_bias_5"
+                "vision_head_weight_t_3",
+                "vision_head_bias_4"
               ],
               "name": "vision_head",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -4532,7 +3956,7 @@
               "attrs": {},
               "inputs": [
                 "input_1",
-                "text_embedding_weight_6"
+                "text_embedding_weight_5"
               ],
               "name": "text_embedding",
               "op": "embedding",
@@ -4576,8 +4000,8 @@
               },
               "inputs": [
                 "reshape_2",
-                "text_norm_weight_7",
-                "text_norm_bias_8"
+                "text_norm_weight_6",
+                "text_norm_bias_7"
               ],
               "name": "text_norm",
               "op": "layer_norm",
@@ -4594,27 +4018,11 @@
               "attrs": {},
               "inputs": [
                 "text_norm",
-                "text_head_weight_t_9"
-              ],
-              "name": "text_head_matmul_10",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  64,
-                  64
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "text_head_matmul_10",
-                "text_head_bias_11"
+                "text_head_weight_t_8",
+                "text_head_bias_9"
               ],
               "name": "text_head",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -4692,8 +4100,8 @@
               },
               "inputs": [
                 "reshape_4",
-                "fusion_0_weight_t_12",
-                "fusion_0_bias_14"
+                "fusion_0_weight_t_10",
+                "fusion_0_bias_11"
               ],
               "name": "fusion_1",
               "op": "fused_linear_gelu",
@@ -4710,27 +4118,11 @@
               "attrs": {},
               "inputs": [
                 "fusion_1",
-                "fusion_2_weight_t_15"
-              ],
-              "name": "fusion_2_matmul_16",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  64,
-                  10
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "fusion_2_matmul_16",
-                "fusion_2_bias_17"
+                "fusion_2_weight_t_12",
+                "fusion_2_bias_13"
               ],
               "name": "fusion_2",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -4774,7 +4166,6 @@
           "add": "torch",
           "fusion_1": "torch",
           "fusion_2": "torch",
-          "fusion_2_matmul_16": "torch",
           "gelu": "torch",
           "reshape": "torch",
           "reshape_1": "torch",
@@ -4784,11 +4175,9 @@
           "reshape_5": "torch",
           "text_embedding": "torch",
           "text_head": "torch",
-          "text_head_matmul_10": "torch",
           "text_norm": "torch",
           "vision": "torch",
-          "vision_head": "torch",
-          "vision_head_matmul_4": "torch"
+          "vision_head": "torch"
         },
         "memory_plan": {
           "aliases": {
@@ -4800,26 +4189,20 @@
           },
           "allocations": {
             "add": {
+              "first": 10,
+              "last": 12,
+              "size_bytes": 16384,
+              "slot": 3
+            },
+            "fusion_1": {
               "first": 12,
-              "last": 14,
+              "last": 13,
               "size_bytes": 16384,
               "slot": 0
             },
-            "fusion_1": {
-              "first": 14,
-              "last": 15,
-              "size_bytes": 16384,
-              "slot": 3
-            },
             "fusion_2": {
-              "first": 16,
-              "last": 17,
-              "size_bytes": 2560,
-              "slot": 3
-            },
-            "fusion_2_matmul_16": {
-              "first": 15,
-              "last": 16,
+              "first": 13,
+              "last": 14,
               "size_bytes": 2560,
               "slot": 2
             },
@@ -4830,26 +4213,20 @@
               "slot": 1
             },
             "text_embedding": {
-              "first": 6,
-              "last": 8,
+              "first": 5,
+              "last": 7,
               "size_bytes": 8192,
-              "slot": 0
+              "slot": 1
             },
             "text_head": {
-              "first": 10,
-              "last": 12,
-              "size_bytes": 16384,
-              "slot": 3
-            },
-            "text_head_matmul_10": {
-              "first": 9,
+              "first": 8,
               "last": 10,
               "size_bytes": 16384,
-              "slot": 0
+              "slot": 1
             },
             "text_norm": {
-              "first": 8,
-              "last": 9,
+              "first": 7,
+              "last": 8,
               "size_bytes": 8192,
               "slot": 2
             },
@@ -4860,19 +4237,13 @@
               "slot": 0
             },
             "vision_head": {
-              "first": 4,
-              "last": 12,
-              "size_bytes": 1024,
-              "slot": 1
-            },
-            "vision_head_matmul_4": {
               "first": 3,
-              "last": 4,
+              "last": 10,
               "size_bytes": 1024,
               "slot": 0
             }
           },
-          "naive_bytes": 917504,
+          "naive_bytes": 897536,
           "planned_bytes": 548864,
           "slot_specs": {
             "0": {
@@ -4906,25 +4277,25 @@
           }
         },
         "optimization_delta": {
-          "critical_path_ops": 2,
+          "critical_path_ops": 1,
           "flops": 0,
-          "logical_bytes": 65536,
-          "nodes": 2,
-          "planned_bytes": 368640
+          "logical_bytes": 32768,
+          "nodes": 1,
+          "planned_bytes": 348672
         },
-        "optimized_nodes": 18,
+        "optimized_nodes": 15,
         "original_analysis": {
-          "arithmetic_intensity": 2.1649487457953773,
+          "arithmetic_intensity": 2.1905959921318243,
           "constant_bytes": 4257064,
-          "critical_path_ops": 14,
+          "critical_path_ops": 11,
           "dominant_nodes": [
             {
-              "arithmetic_intensity": 1.8819205145876408,
+              "arithmetic_intensity": 1.8818698673404928,
               "depth": 4,
-              "flops": 8388608,
-              "logical_bytes": 4457472,
-              "name": "vision_head_matmul_4",
-              "op": "matmul",
+              "flops": 8388864,
+              "logical_bytes": 4457728,
+              "name": "vision_head",
+              "op": "linear",
               "output_shape": [
                 4,
                 64
@@ -4945,6 +4316,18 @@
               ]
             },
             {
+              "arithmetic_intensity": 10.694300518134716,
+              "depth": 8,
+              "flops": 528384,
+              "logical_bytes": 49408,
+              "name": "fusion_0",
+              "op": "linear",
+              "output_shape": [
+                64,
+                64
+              ]
+            },
+            {
               "arithmetic_intensity": 1.0,
               "depth": 2,
               "flops": 524288,
@@ -4959,24 +4342,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 10.666666666666666,
-              "depth": 9,
-              "flops": 524288,
-              "logical_bytes": 49152,
-              "name": "fusion_0_matmul_13",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 8.0,
+              "arithmetic_intensity": 8.062015503875969,
               "depth": 4,
-              "flops": 262144,
-              "logical_bytes": 32768,
-              "name": "text_head_matmul_10",
-              "op": "matmul",
+              "flops": 266240,
+              "logical_bytes": 33024,
+              "name": "text_head",
+              "op": "linear",
               "output_shape": [
                 64,
                 64
@@ -4985,16 +4356,16 @@
           ],
           "flops": 13443968,
           "input_bytes": 49664,
-          "logical_bytes": 6209832,
+          "logical_bytes": 6137128,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
-          "nodes": 20,
+          "nodes": 16,
           "op_counts": {
-            "add": 5,
+            "add": 1,
             "conv2d": 1,
             "embedding": 1,
             "gelu": 2,
             "layer_norm": 1,
-            "matmul": 4,
+            "linear": 4,
             "reshape": 6
           },
           "output_bytes": 2560,
@@ -5040,24 +4411,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 1.8819205145876408,
+              "arithmetic_intensity": 1.8818698673404928,
               "depth": 4,
-              "flops": 8388608,
-              "logical_bytes": 4457472,
-              "name": "vision_head_matmul_4",
-              "op": "matmul",
-              "output_shape": [
-                4,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.1111111111111111,
-              "depth": 5,
-              "flops": 256,
-              "logical_bytes": 2304,
+              "flops": 8388864,
+              "logical_bytes": 4457728,
               "name": "vision_head",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 4,
                 64
@@ -5065,7 +4424,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 2048,
               "name": "reshape_1",
@@ -5114,24 +4473,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 8.0,
+              "arithmetic_intensity": 8.062015503875969,
               "depth": 4,
-              "flops": 262144,
-              "logical_bytes": 32768,
-              "name": "text_head_matmul_10",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12403100775193798,
-              "depth": 5,
-              "flops": 4096,
+              "flops": 266240,
               "logical_bytes": 33024,
               "name": "text_head",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 64,
                 64
@@ -5139,7 +4486,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 32768,
               "name": "reshape_3",
@@ -5152,7 +4499,7 @@
             },
             {
               "arithmetic_intensity": 0.12121212121212122,
-              "depth": 7,
+              "depth": 6,
               "flops": 4096,
               "logical_bytes": 33792,
               "name": "add",
@@ -5165,7 +4512,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 8,
+              "depth": 7,
               "flops": 0,
               "logical_bytes": 32768,
               "name": "reshape_4",
@@ -5176,24 +4523,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 10.666666666666666,
-              "depth": 9,
-              "flops": 524288,
-              "logical_bytes": 49152,
-              "name": "fusion_0_matmul_13",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12403100775193798,
-              "depth": 10,
-              "flops": 4096,
-              "logical_bytes": 33024,
+              "arithmetic_intensity": 10.694300518134716,
+              "depth": 8,
+              "flops": 528384,
+              "logical_bytes": 49408,
               "name": "fusion_0",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 64,
                 64
@@ -5201,7 +4536,7 @@
             },
             {
               "arithmetic_intensity": 1.0,
-              "depth": 11,
+              "depth": 9,
               "flops": 32768,
               "logical_bytes": 32768,
               "name": "fusion_1",
@@ -5212,24 +4547,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 3.8095238095238093,
-              "depth": 12,
-              "flops": 81920,
-              "logical_bytes": 21504,
-              "name": "fusion_2_matmul_16",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                10
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12403100775193798,
-              "depth": 13,
-              "flops": 640,
-              "logical_bytes": 5160,
+              "arithmetic_intensity": 3.8321574452283698,
+              "depth": 10,
+              "flops": 82560,
+              "logical_bytes": 21544,
               "name": "fusion_2",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 64,
                 10
@@ -5237,7 +4560,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 14,
+              "depth": 11,
               "flops": 0,
               "logical_bytes": 5120,
               "name": "reshape_5",
@@ -5250,170 +4573,175 @@
             }
           ]
         },
-        "original_nodes": 20,
+        "original_nodes": 16,
         "passes": [
           {
             "name": "eliminate_dead_nodes",
-            "nodes_after": 20,
-            "nodes_before": 20
+            "nodes_after": 16,
+            "nodes_before": 16
           },
           {
             "name": "fold_constants",
-            "nodes_after": 20,
-            "nodes_before": 20
+            "nodes_after": 16,
+            "nodes_before": 16
           },
           {
             "name": "eliminate_dead_nodes",
-            "nodes_after": 20,
-            "nodes_before": 20
+            "nodes_after": 16,
+            "nodes_before": 16
           },
           {
             "name": "simplify_algebra",
-            "nodes_after": 20,
-            "nodes_before": 20
+            "nodes_after": 16,
+            "nodes_before": 16
           },
           {
             "name": "common_subexpression_elimination",
-            "nodes_after": 20,
-            "nodes_before": 20
+            "nodes_after": 16,
+            "nodes_before": 16
+          },
+          {
+            "name": "canonicalize_linear",
+            "nodes_after": 16,
+            "nodes_before": 16
           },
           {
             "name": "fuse_linear_gelu",
-            "nodes_after": 18,
-            "nodes_before": 20
+            "nodes_after": 15,
+            "nodes_before": 16
           },
           {
             "name": "eliminate_dead_nodes",
-            "nodes_after": 18,
-            "nodes_before": 18
+            "nodes_after": 15,
+            "nodes_before": 15
           },
           {
             "name": "schedule",
-            "nodes_after": 18,
-            "nodes_before": 18
+            "nodes_after": 15,
+            "nodes_before": 15
           }
         ]
       },
       "timings": {
         "eager": {
           "count": 25,
-          "max_ms": 2.22812,
-          "median_ms": 1.610624,
-          "min_ms": 1.287219,
-          "p95_ms": 2.1886844,
+          "max_ms": 2.021591,
+          "median_ms": 1.577252,
+          "min_ms": 1.122579,
+          "p95_ms": 1.9227341999999992,
           "samples_ms": [
-            1.677133,
-            1.853264,
-            1.528438,
-            2.049182,
-            2.163542,
-            1.971613,
-            2.19497,
-            2.05812,
-            1.484746,
-            1.287219,
-            1.667176,
-            1.555268,
-            1.45583,
-            2.22812,
-            2.046944,
-            1.396514,
-            1.477678,
-            1.673884,
-            1.435461,
-            1.506732,
-            1.427775,
-            1.610624,
-            1.480101,
-            1.462288,
-            1.677036
+            1.577252,
+            1.584705,
+            1.546902,
+            2.021591,
+            1.563392,
+            1.5482,
+            1.57546,
+            1.57167,
+            1.591747,
+            1.396226,
+            1.122579,
+            1.488766,
+            1.528304,
+            1.591027,
+            1.674931,
+            1.469585,
+            1.614007,
+            1.570823,
+            1.564511,
+            1.644933,
+            1.660882,
+            1.63318,
+            1.613882,
+            1.605027,
+            1.984685
           ],
           "speedup_vs_eager": 1.0
         },
         "optimized": {
           "count": 25,
-          "max_ms": 3.719009,
-          "median_ms": 1.712478,
-          "min_ms": 1.428697,
-          "p95_ms": 2.5371065999999995,
+          "max_ms": 2.075395,
+          "median_ms": 1.729959,
+          "min_ms": 1.378876,
+          "p95_ms": 1.9424953999999997,
           "samples_ms": [
-            2.023587,
-            2.439917,
-            1.678912,
-            1.724938,
-            1.765969,
-            1.657027,
-            1.554064,
-            3.719009,
-            1.594443,
-            1.584233,
-            1.757054,
-            1.712478,
-            1.87567,
-            1.485807,
-            2.379496,
-            1.431179,
-            1.58348,
-            2.561404,
-            1.475796,
-            1.428697,
-            1.740953,
-            1.675668,
-            1.542447,
-            1.720404,
-            1.746778
+            1.76624,
+            1.671169,
+            1.6961,
+            1.729959,
+            1.753559,
+            1.840565,
+            1.69383,
+            1.659078,
+            1.771135,
+            1.457679,
+            1.796627,
+            1.378876,
+            1.536951,
+            1.762516,
+            1.967978,
+            1.670294,
+            1.829832,
+            1.678101,
+            1.641997,
+            1.686118,
+            2.075395,
+            1.691008,
+            1.839627,
+            1.765,
+            1.822453
           ],
-          "speedup_vs_eager": 0.9405224475876479
+          "speedup_vs_eager": 0.9117279658072822
         },
         "unoptimized": {
           "count": 25,
-          "max_ms": 2.696639,
-          "median_ms": 1.656582,
-          "min_ms": 1.34665,
-          "p95_ms": 2.0819071999999994,
+          "max_ms": 2.328981,
+          "median_ms": 1.72071,
+          "min_ms": 1.45916,
+          "p95_ms": 2.249436999999999,
           "samples_ms": [
-            1.623692,
-            2.126215,
-            1.767402,
-            1.890966,
-            1.612112,
-            1.445468,
-            1.656582,
-            1.721873,
-            2.696639,
-            1.695022,
-            1.600105,
-            1.506959,
-            1.729535,
-            1.34665,
-            1.656727,
-            1.445627,
-            1.363743,
-            1.576678,
-            1.522708,
-            1.502164,
-            1.632795,
-            1.904676,
-            1.680973,
-            1.665069,
-            1.677744
+            1.665995,
+            1.733184,
+            2.328981,
+            1.86866,
+            1.679615,
+            1.682769,
+            1.691294,
+            1.674665,
+            1.827547,
+            1.45916,
+            1.642473,
+            1.671114,
+            1.646335,
+            1.782601,
+            1.72071,
+            1.599278,
+            1.587489,
+            1.715268,
+            1.918639,
+            2.313443,
+            1.752746,
+            1.744937,
+            1.933696,
+            1.764926,
+            1.993413
           ],
-          "speedup_vs_eager": 0.972257334680686
+          "speedup_vs_eager": 0.9166286009844774
         }
       },
       "unoptimized": {
         "analysis": {
-          "arithmetic_intensity": 2.1649487457953773,
+          "arithmetic_intensity": 2.1905959921318243,
           "constant_bytes": 4257064,
-          "critical_path_ops": 14,
+          "critical_path_ops": 11,
           "dominant_nodes": [
             {
-              "arithmetic_intensity": 1.8819205145876408,
+              "arithmetic_intensity": 1.8818698673404928,
               "depth": 4,
-              "flops": 8388608,
-              "logical_bytes": 4457472,
-              "name": "vision_head_matmul_4",
-              "op": "matmul",
+              "flops": 8388864,
+              "logical_bytes": 4457728,
+              "name": "vision_head",
+              "op": "linear",
               "output_shape": [
                 4,
                 64
@@ -5434,6 +4762,18 @@
               ]
             },
             {
+              "arithmetic_intensity": 10.694300518134716,
+              "depth": 8,
+              "flops": 528384,
+              "logical_bytes": 49408,
+              "name": "fusion_0",
+              "op": "linear",
+              "output_shape": [
+                64,
+                64
+              ]
+            },
+            {
               "arithmetic_intensity": 1.0,
               "depth": 2,
               "flops": 524288,
@@ -5448,24 +4788,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 10.666666666666666,
-              "depth": 9,
-              "flops": 524288,
-              "logical_bytes": 49152,
-              "name": "fusion_0_matmul_13",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 8.0,
+              "arithmetic_intensity": 8.062015503875969,
               "depth": 4,
-              "flops": 262144,
-              "logical_bytes": 32768,
-              "name": "text_head_matmul_10",
-              "op": "matmul",
+              "flops": 266240,
+              "logical_bytes": 33024,
+              "name": "text_head",
+              "op": "linear",
               "output_shape": [
                 64,
                 64
@@ -5474,16 +4802,16 @@
           ],
           "flops": 13443968,
           "input_bytes": 49664,
-          "logical_bytes": 6209832,
+          "logical_bytes": 6137128,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
-          "nodes": 20,
+          "nodes": 16,
           "op_counts": {
-            "add": 5,
+            "add": 1,
             "conv2d": 1,
             "embedding": 1,
             "gelu": 2,
             "layer_norm": 1,
-            "matmul": 4,
+            "linear": 4,
             "reshape": 6
           },
           "output_bytes": 2560,
@@ -5529,24 +4857,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 1.8819205145876408,
+              "arithmetic_intensity": 1.8818698673404928,
               "depth": 4,
-              "flops": 8388608,
-              "logical_bytes": 4457472,
-              "name": "vision_head_matmul_4",
-              "op": "matmul",
-              "output_shape": [
-                4,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.1111111111111111,
-              "depth": 5,
-              "flops": 256,
-              "logical_bytes": 2304,
+              "flops": 8388864,
+              "logical_bytes": 4457728,
               "name": "vision_head",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 4,
                 64
@@ -5554,7 +4870,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 2048,
               "name": "reshape_1",
@@ -5603,24 +4919,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 8.0,
+              "arithmetic_intensity": 8.062015503875969,
               "depth": 4,
-              "flops": 262144,
-              "logical_bytes": 32768,
-              "name": "text_head_matmul_10",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12403100775193798,
-              "depth": 5,
-              "flops": 4096,
+              "flops": 266240,
               "logical_bytes": 33024,
               "name": "text_head",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 64,
                 64
@@ -5628,7 +4932,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 32768,
               "name": "reshape_3",
@@ -5641,7 +4945,7 @@
             },
             {
               "arithmetic_intensity": 0.12121212121212122,
-              "depth": 7,
+              "depth": 6,
               "flops": 4096,
               "logical_bytes": 33792,
               "name": "add",
@@ -5654,7 +4958,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 8,
+              "depth": 7,
               "flops": 0,
               "logical_bytes": 32768,
               "name": "reshape_4",
@@ -5665,24 +4969,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 10.666666666666666,
-              "depth": 9,
-              "flops": 524288,
-              "logical_bytes": 49152,
-              "name": "fusion_0_matmul_13",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12403100775193798,
-              "depth": 10,
-              "flops": 4096,
-              "logical_bytes": 33024,
+              "arithmetic_intensity": 10.694300518134716,
+              "depth": 8,
+              "flops": 528384,
+              "logical_bytes": 49408,
               "name": "fusion_0",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 64,
                 64
@@ -5690,7 +4982,7 @@
             },
             {
               "arithmetic_intensity": 1.0,
-              "depth": 11,
+              "depth": 9,
               "flops": 32768,
               "logical_bytes": 32768,
               "name": "fusion_1",
@@ -5701,24 +4993,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 3.8095238095238093,
-              "depth": 12,
-              "flops": 81920,
-              "logical_bytes": 21504,
-              "name": "fusion_2_matmul_16",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                10
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12403100775193798,
-              "depth": 13,
-              "flops": 640,
-              "logical_bytes": 5160,
+              "arithmetic_intensity": 3.8321574452283698,
+              "depth": 10,
+              "flops": 82560,
+              "logical_bytes": 21544,
               "name": "fusion_2",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 64,
                 10
@@ -5726,7 +5006,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 14,
+              "depth": 11,
               "flops": 0,
               "logical_bytes": 5120,
               "name": "reshape_5",
@@ -5742,14 +5022,14 @@
         "backend": "torch",
         "graph": {
           "constants": {
-            "fusion_0_bias_14": {
+            "fusion_0_bias_11": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 64
               ]
             },
-            "fusion_0_weight_t_12": {
+            "fusion_0_weight_t_10": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -5757,14 +5037,14 @@
                 64
               ]
             },
-            "fusion_2_bias_17": {
+            "fusion_2_bias_13": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 10
               ]
             },
-            "fusion_2_weight_t_15": {
+            "fusion_2_weight_t_12": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -5772,7 +5052,7 @@
                 10
               ]
             },
-            "text_embedding_weight_6": {
+            "text_embedding_weight_5": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -5780,14 +5060,14 @@
                 32
               ]
             },
-            "text_head_bias_11": {
+            "text_head_bias_9": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 64
               ]
             },
-            "text_head_weight_t_9": {
+            "text_head_weight_t_8": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -5795,14 +5075,14 @@
                 64
               ]
             },
-            "text_norm_bias_8": {
+            "text_norm_bias_7": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
                 32
               ]
             },
-            "text_norm_weight_7": {
+            "text_norm_weight_6": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -5816,7 +5096,7 @@
                 16
               ]
             },
-            "vision_head_bias_5": {
+            "vision_head_bias_4": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
@@ -5942,27 +5222,11 @@
               "attrs": {},
               "inputs": [
                 "reshape",
-                "vision_head_weight_t_3"
-              ],
-              "name": "vision_head_matmul_4",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  4,
-                  64
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "vision_head_matmul_4",
-                "vision_head_bias_5"
+                "vision_head_weight_t_3",
+                "vision_head_bias_4"
               ],
               "name": "vision_head",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -5999,7 +5263,7 @@
               "attrs": {},
               "inputs": [
                 "input_1",
-                "text_embedding_weight_6"
+                "text_embedding_weight_5"
               ],
               "name": "text_embedding",
               "op": "embedding",
@@ -6043,8 +5307,8 @@
               },
               "inputs": [
                 "reshape_2",
-                "text_norm_weight_7",
-                "text_norm_bias_8"
+                "text_norm_weight_6",
+                "text_norm_bias_7"
               ],
               "name": "text_norm",
               "op": "layer_norm",
@@ -6061,27 +5325,11 @@
               "attrs": {},
               "inputs": [
                 "text_norm",
-                "text_head_weight_t_9"
-              ],
-              "name": "text_head_matmul_10",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  64,
-                  64
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "text_head_matmul_10",
-                "text_head_bias_11"
+                "text_head_weight_t_8",
+                "text_head_bias_9"
               ],
               "name": "text_head",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -6157,27 +5405,11 @@
               "attrs": {},
               "inputs": [
                 "reshape_4",
-                "fusion_0_weight_t_12"
-              ],
-              "name": "fusion_0_matmul_13",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  64,
-                  64
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "fusion_0_matmul_13",
-                "fusion_0_bias_14"
+                "fusion_0_weight_t_10",
+                "fusion_0_bias_11"
               ],
               "name": "fusion_0",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -6209,27 +5441,11 @@
               "attrs": {},
               "inputs": [
                 "fusion_1",
-                "fusion_2_weight_t_15"
-              ],
-              "name": "fusion_2_matmul_16",
-              "op": "matmul",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  64,
-                  10
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "fusion_2_matmul_16",
-                "fusion_2_bias_17"
+                "fusion_2_weight_t_12",
+                "fusion_2_bias_13"
               ],
               "name": "fusion_2",
-              "op": "add",
+              "op": "linear",
               "spec": {
                 "device": "cpu",
                 "dtype": "float32",
@@ -6272,10 +5488,8 @@
         "kernel_plan": {
           "add": "torch",
           "fusion_0": "torch",
-          "fusion_0_matmul_13": "torch",
           "fusion_1": "torch",
           "fusion_2": "torch",
-          "fusion_2_matmul_16": "torch",
           "gelu": "torch",
           "reshape": "torch",
           "reshape_1": "torch",
@@ -6285,11 +5499,9 @@
           "reshape_5": "torch",
           "text_embedding": "torch",
           "text_head": "torch",
-          "text_head_matmul_10": "torch",
           "text_norm": "torch",
           "vision": "torch",
-          "vision_head": "torch",
-          "vision_head_matmul_4": "torch"
+          "vision_head": "torch"
         },
         "memory_plan": {
           "aliases": {
@@ -6301,38 +5513,26 @@
           },
           "allocations": {
             "add": {
-              "first": 12,
-              "last": 14,
-              "size_bytes": 16384,
-              "slot": 0
-            },
-            "fusion_0": {
-              "first": 15,
-              "last": 16,
-              "size_bytes": 16384,
-              "slot": 0
-            },
-            "fusion_0_matmul_13": {
-              "first": 14,
-              "last": 15,
+              "first": 10,
+              "last": 12,
               "size_bytes": 16384,
               "slot": 3
             },
+            "fusion_0": {
+              "first": 12,
+              "last": 13,
+              "size_bytes": 16384,
+              "slot": 0
+            },
             "fusion_1": {
-              "first": 16,
-              "last": 17,
+              "first": 13,
+              "last": 14,
               "size_bytes": 16384,
               "slot": 3
             },
             "fusion_2": {
-              "first": 18,
-              "last": 19,
-              "size_bytes": 2560,
-              "slot": 3
-            },
-            "fusion_2_matmul_16": {
-              "first": 17,
-              "last": 18,
+              "first": 14,
+              "last": 15,
               "size_bytes": 2560,
               "slot": 2
             },
@@ -6343,26 +5543,20 @@
               "slot": 1
             },
             "text_embedding": {
-              "first": 6,
-              "last": 8,
+              "first": 5,
+              "last": 7,
               "size_bytes": 8192,
-              "slot": 0
+              "slot": 1
             },
             "text_head": {
-              "first": 10,
-              "last": 12,
-              "size_bytes": 16384,
-              "slot": 3
-            },
-            "text_head_matmul_10": {
-              "first": 9,
+              "first": 8,
               "last": 10,
               "size_bytes": 16384,
-              "slot": 0
+              "slot": 1
             },
             "text_norm": {
-              "first": 8,
-              "last": 9,
+              "first": 7,
+              "last": 8,
               "size_bytes": 8192,
               "slot": 2
             },
@@ -6373,19 +5567,13 @@
               "slot": 0
             },
             "vision_head": {
-              "first": 4,
-              "last": 12,
-              "size_bytes": 1024,
-              "slot": 1
-            },
-            "vision_head_matmul_4": {
               "first": 3,
-              "last": 4,
+              "last": 10,
               "size_bytes": 1024,
               "slot": 0
             }
           },
-          "naive_bytes": 950272,
+          "naive_bytes": 913920,
           "planned_bytes": 548864,
           "slot_specs": {
             "0": {
@@ -6423,21 +5611,21 @@
           "flops": 0,
           "logical_bytes": 0,
           "nodes": 0,
-          "planned_bytes": 401408
+          "planned_bytes": 365056
         },
-        "optimized_nodes": 20,
+        "optimized_nodes": 16,
         "original_analysis": {
-          "arithmetic_intensity": 2.1649487457953773,
+          "arithmetic_intensity": 2.1905959921318243,
           "constant_bytes": 4257064,
-          "critical_path_ops": 14,
+          "critical_path_ops": 11,
           "dominant_nodes": [
             {
-              "arithmetic_intensity": 1.8819205145876408,
+              "arithmetic_intensity": 1.8818698673404928,
               "depth": 4,
-              "flops": 8388608,
-              "logical_bytes": 4457472,
-              "name": "vision_head_matmul_4",
-              "op": "matmul",
+              "flops": 8388864,
+              "logical_bytes": 4457728,
+              "name": "vision_head",
+              "op": "linear",
               "output_shape": [
                 4,
                 64
@@ -6458,6 +5646,18 @@
               ]
             },
             {
+              "arithmetic_intensity": 10.694300518134716,
+              "depth": 8,
+              "flops": 528384,
+              "logical_bytes": 49408,
+              "name": "fusion_0",
+              "op": "linear",
+              "output_shape": [
+                64,
+                64
+              ]
+            },
+            {
               "arithmetic_intensity": 1.0,
               "depth": 2,
               "flops": 524288,
@@ -6472,24 +5672,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 10.666666666666666,
-              "depth": 9,
-              "flops": 524288,
-              "logical_bytes": 49152,
-              "name": "fusion_0_matmul_13",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 8.0,
+              "arithmetic_intensity": 8.062015503875969,
               "depth": 4,
-              "flops": 262144,
-              "logical_bytes": 32768,
-              "name": "text_head_matmul_10",
-              "op": "matmul",
+              "flops": 266240,
+              "logical_bytes": 33024,
+              "name": "text_head",
+              "op": "linear",
               "output_shape": [
                 64,
                 64
@@ -6498,16 +5686,16 @@
           ],
           "flops": 13443968,
           "input_bytes": 49664,
-          "logical_bytes": 6209832,
+          "logical_bytes": 6137128,
           "model": "static_operator_cost_bounds_not_measured_hardware_counters",
-          "nodes": 20,
+          "nodes": 16,
           "op_counts": {
-            "add": 5,
+            "add": 1,
             "conv2d": 1,
             "embedding": 1,
             "gelu": 2,
             "layer_norm": 1,
-            "matmul": 4,
+            "linear": 4,
             "reshape": 6
           },
           "output_bytes": 2560,
@@ -6553,24 +5741,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 1.8819205145876408,
+              "arithmetic_intensity": 1.8818698673404928,
               "depth": 4,
-              "flops": 8388608,
-              "logical_bytes": 4457472,
-              "name": "vision_head_matmul_4",
-              "op": "matmul",
-              "output_shape": [
-                4,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.1111111111111111,
-              "depth": 5,
-              "flops": 256,
-              "logical_bytes": 2304,
+              "flops": 8388864,
+              "logical_bytes": 4457728,
               "name": "vision_head",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 4,
                 64
@@ -6578,7 +5754,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 2048,
               "name": "reshape_1",
@@ -6627,24 +5803,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 8.0,
+              "arithmetic_intensity": 8.062015503875969,
               "depth": 4,
-              "flops": 262144,
-              "logical_bytes": 32768,
-              "name": "text_head_matmul_10",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12403100775193798,
-              "depth": 5,
-              "flops": 4096,
+              "flops": 266240,
               "logical_bytes": 33024,
               "name": "text_head",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 64,
                 64
@@ -6652,7 +5816,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 6,
+              "depth": 5,
               "flops": 0,
               "logical_bytes": 32768,
               "name": "reshape_3",
@@ -6665,7 +5829,7 @@
             },
             {
               "arithmetic_intensity": 0.12121212121212122,
-              "depth": 7,
+              "depth": 6,
               "flops": 4096,
               "logical_bytes": 33792,
               "name": "add",
@@ -6678,7 +5842,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 8,
+              "depth": 7,
               "flops": 0,
               "logical_bytes": 32768,
               "name": "reshape_4",
@@ -6689,24 +5853,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 10.666666666666666,
-              "depth": 9,
-              "flops": 524288,
-              "logical_bytes": 49152,
-              "name": "fusion_0_matmul_13",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12403100775193798,
-              "depth": 10,
-              "flops": 4096,
-              "logical_bytes": 33024,
+              "arithmetic_intensity": 10.694300518134716,
+              "depth": 8,
+              "flops": 528384,
+              "logical_bytes": 49408,
               "name": "fusion_0",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 64,
                 64
@@ -6714,7 +5866,7 @@
             },
             {
               "arithmetic_intensity": 1.0,
-              "depth": 11,
+              "depth": 9,
               "flops": 32768,
               "logical_bytes": 32768,
               "name": "fusion_1",
@@ -6725,24 +5877,12 @@
               ]
             },
             {
-              "arithmetic_intensity": 3.8095238095238093,
-              "depth": 12,
-              "flops": 81920,
-              "logical_bytes": 21504,
-              "name": "fusion_2_matmul_16",
-              "op": "matmul",
-              "output_shape": [
-                64,
-                10
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.12403100775193798,
-              "depth": 13,
-              "flops": 640,
-              "logical_bytes": 5160,
+              "arithmetic_intensity": 3.8321574452283698,
+              "depth": 10,
+              "flops": 82560,
+              "logical_bytes": 21544,
               "name": "fusion_2",
-              "op": "add",
+              "op": "linear",
               "output_shape": [
                 64,
                 10
@@ -6750,7 +5890,7 @@
             },
             {
               "arithmetic_intensity": 0.0,
-              "depth": 14,
+              "depth": 11,
               "flops": 0,
               "logical_bytes": 5120,
               "name": "reshape_5",
@@ -6763,7 +5903,7 @@
             }
           ]
         },
-        "original_nodes": 20,
+        "original_nodes": 16,
         "passes": []
       }
     }

@@ -435,7 +435,7 @@ This is dynamic **request microbatching**, not continuous token-level admission 
 
 The following is one development-host capture, not a controlled hardware leaderboard. All six workloads passed eager-output comparison before timing.
 
-- **Source:** clean commit `4ee14c979daa5aedb3327bec24017db911fe112b`.
+- **Source:** clean commit `af3ef5d27ac748cb47eb34c4c7bc559157413676`.
 - **Host:** x86_64 macOS; Python 3.12.14; PyTorch 2.2.2; CPU FP32; one Torch thread.
 - **Method:** 5 warmups, 25 measured calls per variant, rotating variant order, synchronized host wall-clock timing.
 - **Scope:** whole invocation, including Python dispatch and output ownership; compilation and tuning excluded.
@@ -445,24 +445,24 @@ The following is one development-host capture, not a controlled hardware leaderb
 
 | Workload `batch_width_hidden` | Eager median ms | ForgeML median ms | ForgeML p95 ms | Eager / ForgeML |
 |---|---:|---:|---:|---:|
-| `mlp_8_64_128` | 0.136 | 0.224 | 0.442 | 0.606× |
-| `residual_8_64_128` | 0.231 | 0.408 | 0.976 | 0.566× |
-| `mlp_32_128_256` | 0.351 | 0.444 | 0.985 | 0.790× |
-| `residual_32_128_256` | 0.442 | 0.409 | 1.171 | 1.080× |
-| `mlp_64_256_512` | 1.526 | 1.762 | 8.238 | 0.866× |
-| `residual_64_256_512` | 2.194 | 1.695 | 35.525 | 1.294× |
+| `mlp_8_64_128` | 0.068 | 0.102 | 0.138 | 0.674× |
+| `residual_8_64_128` | 0.118 | 0.161 | 0.232 | 0.730× |
+| `mlp_32_128_256` | 0.217 | 0.221 | 0.266 | 0.982× |
+| `residual_32_128_256` | 0.264 | 0.273 | 0.513 | 0.964× |
+| `mlp_64_256_512` | 0.772 | 0.703 | 0.963 | 1.098× |
+| `residual_64_256_512` | 0.825 | 0.863 | 1.035 | 0.955× |
 
-A ratio below one is a **slowdown**. These results do not support a blanket CPU speedup claim. Small workloads expose Python dispatch, allocation, and copying overhead; identifying the precise contribution of each requires profiling. Large tail latency makes the apparent improvements in two rows especially unsuitable as headline claims.
+A ratio below one is a **slowdown**. These results do not support a blanket CPU speedup claim. Small workloads expose Python dispatch, allocation, and copying overhead; identifying the precise contribution of each requires profiling. The single row above 1.0× is still a one-host median, not a portable CPU performance guarantee.
 
 ![Compiler-planned intermediate storage](benchmarks/results/compiler-memory.svg)
 
-The memory chart is reconstructed from the captured IR and slot plans, not from an RSS/VRAM sensor. For the smallest MLP, distinct intermediate storage totals 13 KiB, unoptimized slot planning uses 8 KiB, and optimized slot planning uses 5 KiB. For every standard MLP, the five original compute nodes become three; each residual MLP goes from six to four.
+The memory chart is reconstructed from the captured IR and slot plans, not from an RSS/VRAM sensor. For the smallest MLP, distinct internal storage totals 8 KiB, unoptimized slot planning uses 8 KiB, and optimized slot planning uses 4 KiB. For every standard MLP, the three original compute nodes become two; each residual MLP goes from four to three.
 
 ### Neural workloads
 
 The following capture exercises the expanded compiler path rather than MLP-only graphs. Both workloads passed eager-output comparison before timing.
 
-- **Source:** clean commit `fe347a2341a76671fcf3753556436fb341bf7896`.
+- **Source:** clean commit `af3ef5d27ac748cb47eb34c4c7bc559157413676`.
 - **Host:** the same x86_64 macOS / Python 3.12.14 / PyTorch 2.2.2 / CPU FP32 / one-thread compatibility environment.
 - **Transformer:** batch 4, sequence 24, hidden 128, 8 heads, causal SDPA, 256-wide tanh-GELU feed-forward path.
 - **Vision/text:** batch 4, 3×32×32 images, 16 int64 tokens, a 16-channel Conv2d path, LayerNorm text path, additive fusion, and a GELU class head.
@@ -471,15 +471,15 @@ The following capture exercises the expanded compiler path rather than MLP-only 
 
 | Workload | Eager median ms | ForgeML median ms | ForgeML p95 ms | Eager / ForgeML |
 |---|---:|---:|---:|---:|
-| `transformer_block_4x24x128` | 1.296 | 1.514 | 5.917 | 0.856× |
-| `vision_text_fusion_4x32_16` | 1.611 | 1.712 | 2.537 | 0.941× |
+| `transformer_block_4x24x128` | 1.327 | 1.560 | 1.942 | 0.850× |
+| `vision_text_fusion_4x32_16` | 1.577 | 1.730 | 1.942 | 0.912× |
 
-Both optimized CPU executors remain slower than eager. The important evidence is semantic coverage and inspectability, not a manufactured speedup: the optimized transformer goes from 30 to 28 nodes, removes 384 KiB of modeled logical traffic, shortens critical-path depth from 22 to 20, and lowers planned intermediate storage from 384 KiB to 288 KiB. The fusion workload goes from 20 to 18 nodes and removes 64 KiB of modeled logical traffic while retaining the same 536 KiB planned storage.
+Both optimized CPU executors remain slower than eager. The important evidence is semantic coverage and inspectability, not a manufactured speedup: the optimized transformer goes from 24 to 23 nodes, removes 192 KiB of modeled logical traffic, shortens critical-path depth from 18 to 17, and lowers planned intermediate storage from 384 KiB to 288 KiB. The fusion workload goes from 16 to 15 nodes and removes 32 KiB of modeled logical traffic while retaining the same 536 KiB planned storage.
 
 | Workload | Optimized operators | Modeled MFLOPs | Logical KiB | Arithmetic intensity | Critical path |
 |---|---|---:|---:|---:|---:|
-| `transformer_block_4x24x128` | 5 MatMul · 1 fused Linear/GELU · 2 LayerNorm · 1 SDPA | 26.283 | 3493.5 | 7.347 | 20 |
-| `vision_text_fusion_4x32_16` | 3 MatMul · 1 Conv2d · 1 Embedding · 1 LayerNorm · activations | 13.444 | 6000.3 | 2.188 | 12 |
+| `transformer_block_4x24x128` | 5 Linear · 1 fused Linear/GELU · 2 LayerNorm · 1 SDPA | 26.283 | 3013.5 | 8.517 | 17 |
+| `vision_text_fusion_4x32_16` | 3 Linear · 1 fused Linear/GELU · 1 Conv2d · 1 Embedding · 1 LayerNorm · activations | 13.444 | 5961.3 | 2.202 | 10 |
 
 ![Neural workload planned intermediate storage](benchmarks/results/neural-memory.svg)
 

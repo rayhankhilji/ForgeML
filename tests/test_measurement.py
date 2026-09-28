@@ -66,6 +66,30 @@ def test_autotune_cpu_does_not_invent_gpu_results():
     assert compiled.kernel_configs == {}
 
 
+def test_autotune_linear_passes_optional_bias(monkeypatch):
+    from forgeml import autotune, compile, kernels
+
+    seen_bias = []
+    model = torch.nn.Linear(4, 8, bias=True).eval()
+    x = torch.randn(2, 4)
+    compiled = compile(model, (x,), optimize=False)
+    compiled.kernel_plan = {node.name: "triton" for node in compiled.graph.nodes}
+
+    def fake_matmul(a, b, bias=None, *, approximate="none", config=None, out=None):
+        seen_bias.append(bias is not None)
+        value = a @ b + bias
+        return value if out is None else out.copy_(value)
+
+    def fake_measure(variants, **kwargs):
+        return {name: measurement.summarize([1.0, 1.0]) for name in variants}
+
+    monkeypatch.setattr(kernels, "matmul", fake_matmul)
+    monkeypatch.setattr(autotune, "measure_variants", fake_measure)
+    report = autotune.tune_graph(compiled, (x,), warmup=0, repeats=2)
+    assert len(report["nodes"]) == 1
+    assert seen_bias == [True] * (len(kernels.CANDIDATES) + 1)
+
+
 def test_autotune_excludes_incorrect_candidate(monkeypatch):
     from forgeml import autotune, compile, kernels
 
