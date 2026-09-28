@@ -434,7 +434,7 @@ A rank failure or partial cache mutation cannot be safely recovered by rerunning
 
 ### Batching and request routing
 
-`AsyncBatcher` admits a bounded number of outstanding requests (queued plus in-flight), groups compatible requests within a short batching window, and serializes engine calls off the event loop. Compatibility means equal prompt length and equal requested output length; unlike padded batching, this needs no attention mask the engine does not implement. Cancellation and client timeouts retire futures, but cancelling a future cannot cancel a GPU kernel or roll back distributed cache mutation: started work finishes or fails through the engine's failure boundary.
+`AsyncBatcher` admits a bounded number of outstanding requests (queued plus in-flight), groups compatible requests within a short batching window (dispatched immediately once a full batch is ready), and serializes engine calls off the event loop. Compatibility means equal prompt length and equal requested output length; unlike padded batching, this needs no attention mask the engine does not implement. Cancellation and client timeouts retire futures, but cancelling a future cannot cancel a GPU kernel or roll back distributed cache mutation: started work finishes or fails through the engine's failure boundary.
 
 `RequestRouter` picks the healthy replica with the fewest pending requests, round-robin on ties, and falls through to the next replica only on `QueueFull` for unstarted work. A backend failure never triggers a silent retry of partially executed requests. This is dynamic **request microbatching**, not continuous token-level batching, an HTTP gateway, authentication, replica provisioning, or a multi-node control plane; the example router runs in-process over independent engines.
 
@@ -631,7 +631,7 @@ Natural next steps, each to land with an executable contract and a regression te
 
 1. Symbolic shape constraints and bounded dynamic shapes.
 2. Attention masks and GQA/MQA forms for `sdpa`.
-3. Layout-aware fusion beyond the single epilogue pattern.
+3. Layout-aware fusion beyond the epilogue and shared-projection patterns.
 4. CUDA graph capture for the compiled executor.
 5. Paged KV storage and prefix sharing in Nebula.
 6. Pipeline microbatch overlap instead of blocking stage handoff.
