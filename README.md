@@ -462,7 +462,7 @@ The memory chart is reconstructed from the captured IR and slot plans, not from 
 
 The following capture exercises the expanded compiler path rather than MLP-only graphs. Both workloads passed eager-output comparison before timing.
 
-- **Source:** clean commit `af3ef5d27ac748cb47eb34c4c7bc559157413676`.
+- **Source:** clean commit `05995c37ed5f8cd9dc927137d23ae7943003f5c4`.
 - **Host:** the same x86_64 macOS / Python 3.12.14 / PyTorch 2.2.2 / CPU FP32 / one-thread compatibility environment.
 - **Transformer:** batch 4, sequence 24, hidden 128, 8 heads, causal SDPA, 256-wide tanh-GELU feed-forward path.
 - **Vision/text:** batch 4, 3×32×32 images, 16 int64 tokens, a 16-channel Conv2d path, LayerNorm text path, additive fusion, and a GELU class head.
@@ -471,10 +471,10 @@ The following capture exercises the expanded compiler path rather than MLP-only 
 
 | Workload | Eager median ms | ForgeML median ms | ForgeML p95 ms | Eager / ForgeML |
 |---|---:|---:|---:|---:|
-| `transformer_block_4x24x128` | 1.327 | 1.560 | 1.942 | 0.850× |
-| `vision_text_fusion_4x32_16` | 1.577 | 1.730 | 1.942 | 0.912× |
+| `transformer_block_4x24x128` | 1.014 | 1.088 | 1.550 | 0.932× |
+| `vision_text_fusion_4x32_16` | 1.202 | 1.315 | 1.642 | 0.914× |
 
-Both optimized CPU executors remain slower than eager. The important evidence is semantic coverage and inspectability, not a manufactured speedup: the optimized transformer goes from 24 to 23 nodes, removes 192 KiB of modeled logical traffic, shortens critical-path depth from 18 to 17, and lowers planned intermediate storage from 384 KiB to 288 KiB. The fusion workload goes from 16 to 15 nodes and removes 32 KiB of modeled logical traffic while retaining the same 536 KiB planned storage.
+Both optimized CPU executors remain slower than eager. The important evidence is semantic coverage and inspectability, not a manufactured speedup: the optimized transformer goes from 24 to 23 nodes, removes 192 KiB of modeled logical traffic, shortens critical-path depth from 18 to 17, lowers planned intermediate storage from 384 KiB to 288 KiB, and plans all four attention transposes as borrowed views. The fusion workload goes from 16 to 15 nodes and removes 32 KiB of modeled logical traffic while retaining the same 536 KiB planned storage.
 
 | Workload | Optimized operators | Modeled MFLOPs | Logical KiB | Arithmetic intensity | Critical path |
 |---|---|---:|---:|---:|---:|
