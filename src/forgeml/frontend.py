@@ -176,14 +176,14 @@ class _Lowerer:
         w_t = weight.t().contiguous()
         self.builder.constant(w_name, w_t)
         self.const_tensors[w_name] = w_t
-        mm = self.builder.add(self._fresh(f"{out_name}_matmul"), "matmul", (x, w_name))
-        if bias is None:
-            return mm
-        b_name = self._fresh(f"{out_name}_bias")
-        b_c = bias.contiguous()
-        self.builder.constant(b_name, b_c)
-        self.const_tensors[b_name] = b_c
-        return self.builder.add(out_name, "add", (mm, b_name))
+        inputs = (x, w_name)
+        if bias is not None:
+            b_name = self._fresh(f"{out_name}_bias")
+            b_c = bias.contiguous()
+            self.builder.constant(b_name, b_c)
+            self.const_tensors[b_name] = b_c
+            inputs += (b_name,)
+        return self.builder.add(out_name, "linear", inputs)
 
     def lower(self) -> Graph:
         inputs = {f"input_{i}": _spec(t) for i, t in enumerate(self.example_inputs)}
@@ -1108,6 +1108,15 @@ def from_onnx(model_or_path, example_inputs: tuple[torch.Tensor, ...] | None = N
                 a = builder.add(fresh(f"{out}_transA"), "transpose", (a,), dim0=0, dim1=1)
             if trans_b:
                 b = builder.add(fresh(f"{out}_transB"), "transpose", (b,), dim0=0, dim1=1)
+            linear_inputs = (a, b)
+            linear_bias = (
+                len(ins) == 3 and beta == 1.0 and len(spec_of_graph_name(ins[2]).shape) == 1
+            )
+            if alpha == 1.0 and (len(ins) == 2 or linear_bias):
+                if linear_bias:
+                    linear_inputs += (ins[2],)
+                set_out(out, builder.add(out, "linear", linear_inputs))
+                continue
             mm = builder.add(fresh(f"{out}_matmul"), "matmul", (a, b))
             if alpha != 1.0:
                 c = add_scalar(alpha, spec_of_graph_name(ins[0]), f"{out}_alpha")

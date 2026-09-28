@@ -84,6 +84,11 @@ class CompiledModel:
                         self._run_triton(node, args, view)
                     elif node.op == "matmul":
                         torch.matmul(args[0], args[1], out=view)
+                    elif node.op == "linear":
+                        if len(args) == 3:
+                            torch.addmm(args[2], args[0], args[1], out=view)
+                        else:
+                            torch.mm(args[0], args[1], out=view)
                     elif node.op == "add":
                         torch.add(args[0], args[1], out=view)
                     elif node.op == "mul":
@@ -111,11 +116,15 @@ class CompiledModel:
         config = self.kernel_configs.get(node.name, DEFAULT_CONFIG)
         if node.op == "matmul":
             return kernels.matmul(args[0], args[1], config=config, out=out)
+        if node.op == "linear":
+            return kernels.matmul(
+                args[0], args[1], args[2] if len(args) == 3 else None, config=config, out=out
+            )
         if node.op == "fused_linear_gelu":
             return kernels.matmul(
                 args[0],
                 args[1],
-                args[2],
+                args[2] if len(args) == 3 else None,
                 approximate=node.attrs.get("approximate", "none"),
                 config=config,
                 out=out,

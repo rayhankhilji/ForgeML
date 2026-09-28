@@ -2,6 +2,7 @@ import torch
 
 from forgeml.ir import GraphBuilder, TensorSpec
 from forgeml.passes import (
+    canonicalize_linear,
     common_subexpression_elimination,
     eliminate_dead_nodes,
     fold_constants,
@@ -59,6 +60,54 @@ def test_fusion_3_to_1():
     assert n.op == "fused_linear_gelu"
     assert n.name == "y"
     assert n.attrs["approximate"] == "tanh"
+
+
+def test_matmul_bias_add_canonicalizes_to_linear():
+    b = GraphBuilder({"x": spec(2, 4)})
+    b.constant("w", torch.randn(4, 8))
+    b.constant("bias", torch.randn(8))
+    b.add("mm", "matmul", ("x", "w"))
+    b.add("y", "add", ("bias", "mm"))
+    g = b.finish(("y",))
+    out = canonicalize_linear(g)
+    assert [n.op for n in out.nodes] == ["linear"]
+    assert out.nodes[0].name == "y"
+    assert out.nodes[0].inputs == ("x", "w", "bias")
+
+
+def test_matmul_bias_add_stays_when_projection_is_shared_or_output():
+    b = GraphBuilder({"x": spec(2, 4)})
+    b.constant("w", torch.randn(4, 8))
+    b.constant("bias", torch.randn(8))
+    b.add("mm", "matmul", ("x", "w"))
+    b.add("y", "add", ("mm", "bias"))
+    b.add("z", "add", ("mm", "bias"))
+    g = b.finish(("y", "z"))
+    out = canonicalize_linear(g)
+    assert [n.op for n in out.nodes] == ["matmul", "add", "add"]
+
+    b = GraphBuilder({"x": spec(2, 4)})
+    b.constant("w", torch.randn(4, 8))
+    b.constant("bias", torch.randn(8))
+    b.add("mm", "matmul", ("x", "w"))
+    b.add("y", "add", ("mm", "bias"))
+    g = b.finish(("mm", "y"))
+    out = canonicalize_linear(g)
+    assert [n.op for n in out.nodes] == ["matmul", "add"]
+
+
+def test_linear_gelu_fusion_preserves_unbiased_and_biased_forms():
+    b = GraphBuilder({"x": spec(2, 4), "z": spec(2, 4)})
+    b.constant("w", torch.randn(4, 8))
+    b.constant("bias", torch.randn(8))
+    b.add("lin", "linear", ("x", "w", "bias"))
+    b.add("act", "gelu", ("lin",), approximate="none")
+    b.add("plain", "linear", ("z", "w"))
+    b.add("out", "add", ("act", "plain"))
+    out = fuse_linear_gelu(b.finish(("out",)))
+    assert [n.op for n in out.nodes] == ["fused_linear_gelu", "linear", "add"]
+    assert out.nodes[0].inputs == ("x", "w", "bias")
+    assert out.nodes[1].inputs == ("z", "w")
 
 
 def test_fusion_skipped_when_shared_or_output():
@@ -152,6 +201,7 @@ def test_optimize_returns_records_and_preserves_original():
         "eliminate_dead_nodes",
         "simplify_algebra",
         "common_subexpression_elimination",
+        "canonicalize_linear",
         "fuse_linear_gelu",
         "eliminate_dead_nodes",
         "schedule",

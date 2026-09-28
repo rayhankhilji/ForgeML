@@ -142,6 +142,46 @@ def common_subexpression_elimination(graph: Graph) -> Graph:
     return rewritten
 
 
+def canonicalize_linear(graph: Graph) -> Graph:
+    consumers: dict[str, list[str]] = {}
+    for node in graph.nodes:
+        for i in node.inputs:
+            consumers.setdefault(i, []).append(node.name)
+    by_name = {n.name: n for n in graph.nodes}
+    specs = graph.specs()
+    rewritten: dict[str, Node] = {}
+    remove: set[str] = set()
+    for node in graph.nodes:
+        if node.op != "add":
+            continue
+        for candidate, bias in ((node.inputs[0], node.inputs[1]), (node.inputs[1], node.inputs[0])):
+            matmul = by_name.get(candidate)
+            bias_spec = specs.get(bias)
+            if (
+                matmul is None
+                or matmul.op != "matmul"
+                or matmul.name in graph.outputs
+                or len(consumers.get(matmul.name, ())) != 1
+                or bias_spec is None
+                or len(bias_spec.shape) != 1
+                or bias_spec.shape[0] != matmul.spec.shape[1]
+            ):
+                continue
+            rewritten[node.name] = Node(
+                name=node.name,
+                op="linear",
+                inputs=matmul.inputs + (bias,),
+                attrs={},
+                spec=node.spec,
+            )
+            remove.add(matmul.name)
+            break
+    nodes = [rewritten.get(n.name, n) for n in graph.nodes if n.name not in remove]
+    used = {i for n in nodes for i in n.inputs}
+    constants = {k: v for k, v in graph.constants.items() if k in used or k in graph.outputs}
+    return _rebuild(graph, nodes, constants)
+
+
 def fuse_linear_gelu(graph: Graph) -> Graph:
     consumers: dict[str, list[str]] = {}
     for node in graph.nodes:
@@ -153,7 +193,23 @@ def fuse_linear_gelu(graph: Graph) -> Graph:
     for node in graph.nodes:
         if node.op != "gelu" or len(node.inputs) != 1:
             continue
-        add = by_name.get(node.inputs[0])
+        producer = by_name.get(node.inputs[0])
+        if (
+            producer is not None
+            and producer.op == "linear"
+            and producer.name not in graph.outputs
+            and len(consumers.get(producer.name, ())) == 1
+        ):
+            fused[node.name] = Node(
+                name=node.name,
+                op="fused_linear_gelu",
+                inputs=producer.inputs,
+                attrs={"approximate": node.attrs.get("approximate", "none")},
+                spec=node.spec,
+            )
+            remove.add(producer.name)
+            continue
+        add = producer
         if add is None or add.op != "add":
             continue
         if add.name in graph.outputs or len(consumers.get(add.name, ())) != 1:
@@ -268,6 +324,7 @@ def optimize(graph: Graph) -> tuple[Graph, list[PassRecord]]:
         ("eliminate_dead_nodes", eliminate_dead_nodes),
         ("simplify_algebra", simplify_algebra),
         ("common_subexpression_elimination", common_subexpression_elimination),
+        ("canonicalize_linear", canonicalize_linear),
         ("fuse_linear_gelu", fuse_linear_gelu),
         ("eliminate_dead_nodes", eliminate_dead_nodes),
         ("schedule", schedule),

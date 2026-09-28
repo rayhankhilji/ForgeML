@@ -86,6 +86,7 @@ def _check_attrs(op: str, attrs: dict[str, Any], arity: int) -> None:
         raise GraphError(f"unsupported op {op!r}")
     allowed = {
         "matmul": set(),
+        "linear": set(),
         "add": set(),
         "mul": set(),
         "relu": set(),
@@ -139,6 +140,7 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
     _check_attrs(op, attrs, len(input_specs))
     expected_arity = {
         "matmul": (2,),
+        "linear": (2, 3),
         "add": (2,),
         "mul": (2,),
         "relu": (1,),
@@ -146,7 +148,7 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
         "reshape": (1,),
         "transpose": (1,),
         "softmax": (1,),
-        "fused_linear_gelu": (3,),
+        "fused_linear_gelu": (2, 3),
         "layer_norm": (1, 3),
         "sdpa": (3,),
         "conv2d": (2, 3),
@@ -163,6 +165,20 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
             raise GraphError(f"matmul dtype mismatch {a.dtype} vs {b.dtype}")
         if a.shape[1] != b.shape[0]:
             raise GraphError(f"matmul shape mismatch {a.shape} x {b.shape}")
+    if op == "linear":
+        x, weight = input_specs[:2]
+        if len(x.shape) != 2 or len(weight.shape) != 2:
+            raise GraphError("linear requires rank-2 input and weight tensors")
+        if x.dtype != weight.dtype:
+            raise GraphError(f"linear dtype mismatch {x.dtype} vs {weight.dtype}")
+        if x.shape[1] != weight.shape[0]:
+            raise GraphError(f"linear shape mismatch {x.shape} x {weight.shape}")
+        if len(input_specs) == 3:
+            bias = input_specs[2]
+            if len(bias.shape) != 1 or bias.shape[0] != weight.shape[1]:
+                raise GraphError("linear bias must be a 1-D tensor of output width")
+            if bias.dtype != x.dtype:
+                raise GraphError("linear bias dtype mismatch")
     if (
         op in ("add", "mul")
         and input_specs[0].dtype != input_specs[1].dtype
@@ -199,12 +215,18 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
         if not isinstance(d, int) or isinstance(d, bool) or not -rank <= d < rank:
             raise GraphError(f"softmax dim={d!r} out of range for rank {rank}")
     if op == "fused_linear_gelu":
-        a, b, bias = input_specs
-        if len(a.shape) != 2 or len(b.shape) != 2 or len(bias.shape) != 1:
-            raise GraphError("fused_linear_gelu requires rank-2 matmul inputs and 1-D bias")
-        if a.shape[1] != b.shape[0] or bias.shape[0] != b.shape[1]:
+        a, b = input_specs[:2]
+        if len(a.shape) != 2 or len(b.shape) != 2:
+            raise GraphError("fused_linear_gelu requires rank-2 matmul inputs")
+        if a.shape[1] != b.shape[0]:
             raise GraphError("fused_linear_gelu shape mismatch")
-        if not (a.dtype == b.dtype == bias.dtype):
+        if len(input_specs) == 3:
+            bias = input_specs[2]
+            if len(bias.shape) != 1 or bias.shape[0] != b.shape[1]:
+                raise GraphError("fused_linear_gelu bias must be a 1-D output-width tensor")
+            if bias.dtype != a.dtype:
+                raise GraphError("fused_linear_gelu bias dtype mismatch")
+        if a.dtype != b.dtype:
             raise GraphError("fused_linear_gelu dtype mismatch")
         if attrs.get("approximate", "none") not in ("none", "tanh"):
             raise GraphError("fused_linear_gelu approximate must be 'none' or 'tanh'")

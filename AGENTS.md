@@ -36,8 +36,9 @@ these exact modern dependency pins, compiler tests and package build at commit
   Dropout/BatchNorm.
 - Shapes are static: every dimension must be a positive integer; zero/dynamic
   dims fail in `TensorSpec`/`Graph.validate()`.
-- Operator semantics are explicit and bounded: `matmul`, `add`, `mul`, `relu`,
-  `gelu`, `reshape`, `transpose`, `softmax`, `fused_linear_gelu`, `layer_norm`,
+- Operator semantics are explicit and bounded: `matmul`, `linear`, `add`, `mul`,
+  `relu`, `gelu`, `reshape`, `transpose`, `softmax`, `fused_linear_gelu`,
+  `layer_norm`,
   `sdpa`, `conv2d`, and `embedding`. SDPA is inference-only: zero dropout, no
   `attn_mask`, no `enable_gqa`. Conv2d is NCHW/OIHW with zero padding only.
   Embedding lookup requires int64 indices and rejects padding/max-norm/sparse
@@ -46,7 +47,7 @@ these exact modern dependency pins, compiler tests and package build at commit
   Relu, Gelu, Reshape, Transpose, Softmax, Constant, Identity, Gemm, Conv,
   LayerNormalization, and axis-0 Gather. Reject unsupported attrs/domains.
 - Backends: `torch` (default), `triton`, and `auto`. `triton`/`auto` map only
-  eligible CUDA `matmul`/`fused_linear_gelu` nodes to the Triton kernel in
+  eligible CUDA `matmul`/`linear`/`fused_linear_gelu` nodes to the Triton kernel in
   `src/forgeml/_triton.py` (mixed execution with torch fallback for the rest);
   `triton` requires CUDA + the triton package and errors clearly otherwise.
   No silent fallback if a selected Triton launch fails. The Triton path is

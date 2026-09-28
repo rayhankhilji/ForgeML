@@ -55,6 +55,19 @@ def test_builder_infers_specs():
     assert g.specs()["mm"] == TensorSpec((2, 4), torch.float32, "cpu")
 
 
+def test_linear_and_unbiased_fused_specs():
+    b = GraphBuilder({"x": spec(2, 3)})
+    b.constant("w", torch.ones(3, 4))
+    b.constant("bias", torch.ones(4))
+    b.add("lin", "linear", ("x", "w", "bias"))
+    b.add("act", "fused_linear_gelu", ("x", "w"), approximate="tanh")
+    g = b.finish(("lin", "act"))
+    assert g.specs()["lin"].shape == (2, 4)
+    assert g.specs()["act"].shape == (2, 4)
+    with pytest.raises(GraphError, match="linear bias"):
+        b.add("bad", "linear", ("x", "w", "w"))
+
+
 def test_explicit_graph_validation():
     g = Graph(
         inputs={"x": spec(2, 3)},

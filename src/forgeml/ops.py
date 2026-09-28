@@ -5,6 +5,7 @@ import torch.nn.functional as F
 
 SUPPORTED_OPS = {
     "matmul",
+    "linear",
     "add",
     "mul",
     "relu",
@@ -23,6 +24,10 @@ SUPPORTED_OPS = {
 def evaluate(op: str, args: tuple[torch.Tensor, ...], attrs: dict) -> torch.Tensor:
     if op == "matmul":
         return torch.matmul(args[0], args[1])
+    if op == "linear":
+        if len(args) == 3:
+            return torch.addmm(args[2], args[0], args[1])
+        return torch.mm(args[0], args[1])
     if op == "add":
         return torch.add(args[0], args[1])
     if op == "mul":
@@ -38,7 +43,10 @@ def evaluate(op: str, args: tuple[torch.Tensor, ...], attrs: dict) -> torch.Tens
     if op == "softmax":
         return torch.softmax(args[0], dim=attrs["dim"])
     if op == "fused_linear_gelu":
-        out = torch.add(torch.matmul(args[0], args[1]), args[2])
+        if len(args) == 3:
+            out = torch.addmm(args[2], args[0], args[1])
+        else:
+            out = torch.mm(args[0], args[1])
         return F.gelu(out, approximate=attrs.get("approximate", "none"))
     if op == "layer_norm":
         weight = args[1] if len(args) == 3 else None

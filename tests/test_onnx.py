@@ -53,6 +53,21 @@ def test_gemm_transpose_alpha_beta():
     torch.testing.assert_close(c(xt), expected)
 
 
+def test_gemm_affine_lowers_to_linear():
+    a = np.random.randn(2, 4).astype(np.float32)
+    b = np.random.randn(4, 8).astype(np.float32)
+    cb = np.random.randn(8).astype(np.float32)
+    inits = [numpy_helper.from_array(t, n) for t, n in ((b, "b"), (cb, "c"))]
+    nodes = [helper.make_node("Gemm", ["a", "b", "c"], ["y"])]
+    m = make_model(nodes, [vi("a", [2, 4])], [vi("y", [2, 8])], inits)
+    g = from_onnx(m)
+    assert [node.op for node in g.nodes] == ["linear"]
+    c = compile(g)
+    xt = torch.from_numpy(a)
+    expected = xt @ torch.from_numpy(b) + torch.from_numpy(cb)
+    torch.testing.assert_close(c(xt), expected)
+
+
 def test_reshape_zero_copies_input_dim():
     shape = numpy_helper.from_array(np.array([0, -1], dtype=np.int64), "shape")
     nodes = [helper.make_node("Reshape", ["x", "shape"], ["y"], allowzero=0)]

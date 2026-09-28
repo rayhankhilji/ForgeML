@@ -121,7 +121,7 @@ def select_kernels(graph: Graph, backend: str) -> dict[str, str]:
         for node in graph.nodes:
             if (
                 can
-                and node.op in ("matmul", "fused_linear_gelu")
+                and node.op in ("matmul", "linear", "fused_linear_gelu")
                 and node.spec.dtype in _DTYPES
                 and all(torch.device(specs[i].device).type == "cuda" for i in node.inputs)
             ):
@@ -142,7 +142,7 @@ def select_kernels(graph: Graph, backend: str) -> dict[str, str]:
             raise GraphError("backend 'triton' requires CUDA graph inputs")
         plan = {}
         for node in graph.nodes:
-            if node.op in ("matmul", "fused_linear_gelu") and node.spec.dtype in _DTYPES:
+            if node.op in ("matmul", "linear", "fused_linear_gelu") and node.spec.dtype in _DTYPES:
                 plan[node.name] = "triton"
             else:
                 plan[node.name] = "torch"

@@ -68,6 +68,33 @@ def test_optimize_flag_off():
     torch.testing.assert_close(c(x), m(x))
 
 
+def test_linear_writes_internal_result_to_planned_storage():
+    m = nn.Sequential(nn.Linear(8, 16), nn.ReLU(), nn.Linear(16, 4, bias=False)).eval()
+    x = torch.randn(4, 8)
+    c = compile(m, (x,), optimize=False)
+    assert [n.op for n in c.graph.nodes] == ["linear", "relu", "linear"]
+    assert c.graph.nodes[0].name in c.memory_plan.allocations
+    torch.testing.assert_close(c(x), m(x))
+
+
+def test_linear_gelu_optimizes_to_fused_operator():
+    m = make_mlp()
+    x = torch.randn(4, 8)
+    c = compile(m, (x,))
+    assert [n.op for n in c.graph.nodes] == ["fused_linear_gelu", "linear"]
+    assert len(c.graph.nodes[0].inputs) == 3
+    torch.testing.assert_close(c(x), m(x))
+
+
+def test_unbiased_linear_gelu_optimizes_to_fused_operator():
+    m = nn.Sequential(nn.Linear(8, 16, bias=False), nn.GELU()).eval()
+    x = torch.randn(4, 8)
+    c = compile(m, (x,))
+    assert [n.op for n in c.graph.nodes] == ["fused_linear_gelu"]
+    assert len(c.graph.nodes[0].inputs) == 2
+    torch.testing.assert_close(c(x), m(x))
+
+
 def test_explicit_graph_compiles():
     m = make_mlp()
     x = torch.randn(4, 8)

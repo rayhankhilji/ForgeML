@@ -165,7 +165,7 @@ For each node, spec inference runs the whitelisted operation on meta tensors and
 
 | Source construct | Lowering / restriction |
 |---|---|
-| `nn.Linear`, `F.linear` | Rank-2 matmul plus optional bias; constant weight snapshot |
+| `nn.Linear`, `F.linear` | Dedicated rank-2 `linear(x, Wᵀ, bias?)` affine projection; constant weight snapshot |
 | `matmul`, `mm`, `@` | Rank-2 operands only |
 | Add / multiply | Broadcasting; scalar operands; no in-place mutation or `out=` import |
 | ReLU | Non-in-place only |
@@ -181,7 +181,7 @@ For each node, spec inference runs the whitelisted operation on meta tensors and
 | Outputs | One tensor or a flat tensor tuple |
 | ONNX | Default domain, opsets 13–22; Gelu requires 20+ |
 
-ONNX additionally supports `Gemm` alpha/beta/transposition lowering, `Constant`, `Identity`, rank-2 `Conv`, `LayerNormalization`, and axis-0 `Gather` as embedding lookup. ONNX transpose is restricted to identity or a single dimension swap. Reshape needs a constant int64 shape and `allowzero=0`; zeros copy corresponding input dimensions. Unsupported operations fail explicitly instead of being silently executed through an opaque fallback importer.
+ONNX additionally supports `Gemm` alpha/beta/transposition lowering—emitting `linear` directly for `alpha=1`, `beta=1`, and a rank-1 `C`—plus `Constant`, `Identity`, rank-2 `Conv`, `LayerNormalization`, and axis-0 `Gather` as embedding lookup. ONNX transpose is restricted to identity or a single dimension swap. Reshape needs a constant int64 shape and `allowzero=0`; zeros copy corresponding input dimensions. Unsupported operations fail explicitly instead of being silently executed through an opaque fallback importer.
 
 **Not supported:** training, gradients through compiled execution, dynamic control flow, general dynamic shapes, nonzero-padding Conv2d modes, attention masks/dropout/GQA, sparse or normalizing embedding variants, arbitrary Python side effects, nested output structures, arbitrary ONNX domains, or pretrained-model loading. FX tracing executes Python from the supplied module: compile only trusted Python models.
 
@@ -221,26 +221,34 @@ with static rank-4 tensors, equal K/V sequence shapes, optional `is_causal`, and
 ```mermaid
 flowchart LR
     subgraph Before
-        X1[X] --> MM[MatMul]
-        W1[W] --> MM
+        X1[X] --> L[Linear]
+        W1[Wᵀ] --> L
+        B1[bias?] --> L
+        L --> G[GELU]
+        X3[X] --> MM[MatMul]
+        W3[W] --> MM
         MM --> ADD[Add]
-        B1[bias] --> ADD
-        ADD --> G[GELU]
+        B3[bias] --> ADD
     end
     subgraph After
-        X2[X] --> F[Fused MatMul + Bias + GELU]
-        W2[W] --> F
-        B2[bias] --> F
+        X2[X] --> F[Fused Linear + GELU]
+        W2[Wᵀ] --> F
+        B2[bias?] --> F
+        X4[X] --> L2[Linear]
+        W4[W] --> L2
+        B4[bias] --> L2
     end
 ```
 
-The rewrite recognizes
+`linear` is a first-class affine projection rather than a temporary `matmul` node followed by a vector `add`. The Torch executor dispatches it through `torch.mm` or `torch.addmm` directly into planned intermediate storage. A separate canonicalization pass also rewrites eligible `matmul + 1-D bias add` graphs to `linear`, which gives explicit ONNX-shaped graphs the same representation as `nn.Linear` lowering.
 
-$$Y=\operatorname{GELU}(XW+b),\qquad X\in\mathbb{R}^{M\times K},\quad W\in\mathbb{R}^{K\times N},\quad b\in\mathbb{R}^{N}.$$
+The epilogue rewrite then recognizes
 
-Both eliminated intermediates must have exactly one consumer and must not be graph outputs. A shared matmul, observable pre-activation, or non-vector bias blocks this transformation. The terminal node's name, output spec, and GELU mode are preserved.
+$$Y=\operatorname{GELU}(XW+b),\qquad X\in\mathbb{R}^{M\times K},\quad W\in\mathbb{R}^{K\times N},\quad b\in\mathbb{R}^{N}\text{ or absent}.$$
 
-On the Torch backend this is **graph fusion, not one CPU kernel**. On the Triton path, the tile accumulator, bias addition, and activation are handled within one kernel invocation. Thus graph simplification and hardware fusion are different claims.
+A linear producer is fused only when it has exactly one consumer and is not itself a graph output. A shared projection, observable pre-activation, or non-vector legacy bias blocks the transformation. The terminal node's name, output spec, optional bias, and GELU mode are preserved.
+
+On the Torch backend this is **graph fusion, not one CPU kernel**. On the Triton path, the tile accumulator, optional bias addition, and activation are handled within one kernel invocation. Thus graph simplification and hardware fusion are different claims.
 
 ### 5. Cost-model-guided operator scheduling
 
@@ -282,7 +290,7 @@ Execution uses a fresh slot arena per invocation. Output views are materialized 
 
 `compiled.explain()["analysis"]` reports a transparent static cost model, not hardware counters. For each node it records operation kind, output shape, estimated FLOPs, unique input bytes plus output bytes, arithmetic intensity, and producer-consumer depth. The graph summary reports operator counts, aggregate model bounds, input/constant/output bytes, critical-path operation depth, and the five largest modeled contributors.
 
-For an $M\times K$ by $K\times N$ matmul the model uses $2MKN$ FLOPs. NCHW convolution uses two FLOPs per output multiply-accumulate plus one per bias-add element. Attention uses
+For an $M\times K$ by $K\times N$ matrix product the model uses $2MKN$ FLOPs; `linear` adds one modeled FLOP per output element when a bias is present, and `fused_linear_gelu` adds the same optional bias work plus eight operations per output for the activation approximation. NCHW convolution uses two FLOPs per output multiply-accumulate plus one per bias-add element. Attention uses
 
 $$2BHQK(2d_h)+5BHQK$$
 
@@ -315,7 +323,7 @@ For low-precision inputs, the fused kernel deliberately rounds the matmul and bi
 | Backend | Behavior |
 |---|---|
 | `torch` | All operations use the reference executor |
-| `auto` | Eligible CUDA matmul/fused nodes use Triton when available; other nodes use Torch |
+| `auto` | Eligible CUDA `matmul`/`linear`/fused nodes use Triton when available; other nodes use Torch |
 | `triton` | Requires CUDA and Triton; uses an explicit mixed plan for the supported kernel subset |
 
 The actual per-node selection is visible in `compiled.explain()["kernel_plan"]`. A selected kernel that fails does not silently fall back and manufacture a successful GPU benchmark.

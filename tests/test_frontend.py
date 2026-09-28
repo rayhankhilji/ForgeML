@@ -117,7 +117,7 @@ def test_root_linear_module():
     x = torch.randn(2, 8)
     g = from_torch(lin, (x,))
     ops = [n.op for n in g.nodes]
-    assert "matmul" in ops and "add" in ops
+    assert ops == ["linear"]
     c = compile(g)
     torch.testing.assert_close(c(x), lin(x))
 
@@ -316,7 +316,8 @@ def test_transformer_block_parity_and_shape_statics():
     x = torch.randn(2, 6, 32)
     graph = parity(model, x)
     ops = {node.op for node in graph.nodes}
-    assert {"layer_norm", "sdpa", "reshape", "transpose", "matmul"} <= ops
+    assert {"layer_norm", "sdpa", "reshape", "transpose", "linear"} <= ops
+    assert "matmul" not in ops
 
 
 def test_multimodal_fusion_parity():

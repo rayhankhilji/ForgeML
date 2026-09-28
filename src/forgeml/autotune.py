@@ -32,7 +32,7 @@ def tune_graph(
         args = tuple(values[name] for name in node.inputs)
         expected = evaluate(node.op, args, node.attrs)
         if compiled.kernel_plan.get(node.name) == "triton":
-            bias = args[2] if node.op == "fused_linear_gelu" else None
+            bias = args[2] if len(args) == 3 else None
             approximate = node.attrs.get("approximate", "none")
             variants = {}
             configs = {}

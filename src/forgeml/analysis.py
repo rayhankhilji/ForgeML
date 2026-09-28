@@ -17,10 +17,15 @@ def _node_flops(node: Node, inputs: list[TensorSpec]) -> int:
         m, k = inputs[0].shape
         _, n = inputs[1].shape
         return 2 * m * k * n
+    if node.op == "linear":
+        m, k = inputs[0].shape
+        _, n = inputs[1].shape
+        return 2 * m * k * n + (elements if len(inputs) == 3 else 0)
     if node.op == "fused_linear_gelu":
         m, k = inputs[0].shape
         _, n = inputs[1].shape
-        return 2 * m * k * n + elements + 8 * elements
+        bias = elements if len(inputs) == 3 else 0
+        return 2 * m * k * n + bias + 8 * elements
     if node.op in ("add", "mul", "relu"):
         return elements
     if node.op == "gelu":
