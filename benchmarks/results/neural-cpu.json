@@ -1,9 +1,9 @@
 {
   "environment": {
-    "captured_at_utc": "2026-09-28T11:18:23.369062+00:00",
+    "captured_at_utc": "2026-09-29T11:18:40.878558+00:00",
     "cuda_runtime": null,
     "device": "cpu",
-    "git_commit": "92f3dfddd63e1d5d80b32d7d1f1d87397f9e6cf7",
+    "git_commit": "a49cf9f2e2ba98b291648f56890c72f04ee9f2d4",
     "git_dirty": false,
     "machine": "x86_64",
     "percentile_method": "linear_interpolation_at_(n-1)*q",
@@ -44,8 +44,8 @@
     {
       "autotuning": null,
       "compile_ms": {
-        "optimized": 1199.126024,
-        "unoptimized": 1712.07914
+        "optimized": 2803.808222,
+        "unoptimized": 2502.874549
       },
       "correctness": {
         "optimized": {
@@ -1136,6 +1136,12 @@
               "first": 21,
               "last": 23,
               "size_bytes": 49152,
+              "slot": 2
+            },
+            "gelu": {
+              "first": 20,
+              "last": 21,
+              "size_bytes": 98304,
               "slot": 0
             },
             "o": {
@@ -1152,7 +1158,7 @@
             }
           },
           "naive_bytes": 1277952,
-          "planned_bytes": 196608,
+          "planned_bytes": 245760,
           "slot_specs": {
             "0": {
               "device": "cpu",
@@ -1167,6 +1173,13 @@
               "shape": [
                 12288
               ]
+            },
+            "2": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                12288
+              ]
             }
           }
         },
@@ -1175,7 +1188,7 @@
           "flops": 0,
           "logical_bytes": 294912,
           "nodes": 0,
-          "planned_bytes": 1081344
+          "planned_bytes": 1032192
         },
         "optimized_nodes": 24,
         "original_analysis": {
@@ -1629,108 +1642,108 @@
       "timings": {
         "eager": {
           "count": 25,
-          "max_ms": 7.099819,
-          "median_ms": 2.300255,
-          "min_ms": 1.60405,
-          "p95_ms": 6.441534599999995,
+          "max_ms": 118.119726,
+          "median_ms": 2.464726,
+          "min_ms": 1.42434,
+          "p95_ms": 44.7785247999999,
           "samples_ms": [
-            2.060711,
-            4.607263,
-            2.113518,
-            1.843209,
-            6.772794,
-            3.254227,
-            1.816807,
-            3.512606,
-            1.888757,
-            1.60405,
-            1.898876,
-            1.839836,
-            1.834328,
-            2.300255,
-            2.625664,
-            1.923601,
-            3.472578,
-            5.116497,
-            2.570582,
-            7.099819,
-            1.828914,
-            1.992831,
-            3.162317,
-            3.461698,
-            2.628179
+            52.036419,
+            1.541537,
+            4.810514,
+            1.639329,
+            7.55972,
+            3.841364,
+            2.407332,
+            1.536024,
+            118.119726,
+            2.469047,
+            1.538538,
+            3.312967,
+            1.465145,
+            1.543093,
+            2.705333,
+            1.617292,
+            1.564232,
+            1.783122,
+            3.380557,
+            2.464726,
+            1.949817,
+            15.746948,
+            6.301501,
+            1.42434,
+            4.534783
           ],
           "speedup_vs_eager": 1.0
         },
         "optimized": {
           "count": 25,
-          "max_ms": 9.458016,
-          "median_ms": 2.583818,
-          "min_ms": 1.392254,
-          "p95_ms": 6.666811599999998,
+          "max_ms": 60.043668,
+          "median_ms": 2.02599,
+          "min_ms": 1.343796,
+          "p95_ms": 4.3399481999999985,
           "samples_ms": [
-            1.962385,
-            5.721619,
-            2.592628,
-            1.392254,
-            2.583818,
-            2.153584,
-            2.37911,
-            1.674429,
-            1.746306,
-            3.225664,
-            2.09002,
-            2.003263,
-            3.066983,
-            1.815478,
-            2.125813,
-            1.819554,
-            5.676276,
-            6.780351,
-            9.458016,
-            6.212654,
-            2.181053,
-            3.427297,
-            3.511117,
-            2.625964,
-            3.130886
+            2.215261,
+            1.54058,
+            3.849301,
+            2.036248,
+            2.698858,
+            2.96608,
+            3.279564,
+            2.226233,
+            1.715025,
+            1.941126,
+            2.02599,
+            1.670698,
+            1.601248,
+            1.507229,
+            1.740372,
+            1.343796,
+            1.962158,
+            1.445352,
+            2.651499,
+            3.445101,
+            1.757505,
+            2.969785,
+            4.46261,
+            1.468451,
+            60.043668
           ],
-          "speedup_vs_eager": 0.8902542671349143
+          "speedup_vs_eager": 1.2165538822995177
         },
         "unoptimized": {
           "count": 25,
-          "max_ms": 7.072596,
-          "median_ms": 2.797794,
-          "min_ms": 1.394133,
-          "p95_ms": 6.693461799999996,
+          "max_ms": 111.43034,
+          "median_ms": 1.989519,
+          "min_ms": 1.316845,
+          "p95_ms": 13.031076799999997,
           "samples_ms": [
-            2.209101,
-            6.937569,
-            2.615432,
-            2.12913,
-            2.797794,
-            3.834558,
-            5.005243,
-            3.056526,
-            2.067874,
-            5.717033,
-            1.993829,
-            2.428954,
-            2.176941,
-            1.843174,
-            2.384138,
-            2.052781,
-            1.394133,
-            2.775732,
-            5.520766,
-            7.072596,
-            3.506699,
-            3.096246,
-            3.120592,
-            2.867818,
-            4.511397
+            1.499989,
+            1.425712,
+            1.766102,
+            12.483112,
+            2.294138,
+            3.069596,
+            3.734718,
+            2.19451,
+            2.837919,
+            1.989519,
+            1.76652,
+            1.887261,
+            1.345829,
+            1.854244,
+            1.843604,
+            1.316845,
+            1.625519,
+            2.409545,
+            1.934608,
+            3.608333,
+            2.102043,
+            13.168068,
+            2.627158,
+            1.649502,
+            111.43034
           ],
-          "speedup_vs_eager": 0.8221673933105867
+          "speedup_vs_eager": 1.2388552207845214
         }
       },
       "unoptimized": {
@@ -2824,6 +2837,12 @@
               "size_bytes": 49152,
               "slot": 0
             },
+            "gelu": {
+              "first": 20,
+              "last": 21,
+              "size_bytes": 98304,
+              "slot": 4
+            },
             "k": {
               "first": 5,
               "last": 11,
@@ -2856,7 +2875,7 @@
             }
           },
           "naive_bytes": 1228800,
-          "planned_bytes": 245760,
+          "planned_bytes": 344064,
           "slot_specs": {
             "0": {
               "device": "cpu",
@@ -2885,6 +2904,13 @@
               "shape": [
                 24576
               ]
+            },
+            "4": {
+              "device": "cpu",
+              "dtype": "float32",
+              "shape": [
+                24576
+              ]
             }
           }
         },
@@ -2893,7 +2919,7 @@
           "flops": 0,
           "logical_bytes": 0,
           "nodes": 0,
-          "planned_bytes": 983040
+          "planned_bytes": 884736
         },
         "optimized_nodes": 24,
         "original_analysis": {
@@ -3297,8 +3323,8 @@
     {
       "autotuning": null,
       "compile_ms": {
-        "optimized": 708.606159,
-        "unoptimized": 194.973763
+        "optimized": 1465.104671,
+        "unoptimized": 472.408958
       },
       "correctness": {
         "optimized": {
@@ -3405,68 +3431,6 @@
           "output_bytes": 2560,
           "per_node": [
             {
-              "arithmetic_intensity": 0.0,
-              "depth": 1,
-              "flops": 0,
-              "logical_bytes": 41472,
-              "name": "text_embedding",
-              "op": "embedding",
-              "output_shape": [
-                4,
-                16,
-                32
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.0,
-              "depth": 2,
-              "flops": 0,
-              "logical_bytes": 0,
-              "name": "reshape_2",
-              "op": "reshape",
-              "output_shape": [
-                64,
-                32
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.7384615384615385,
-              "depth": 3,
-              "flops": 12288,
-              "logical_bytes": 16640,
-              "name": "text_norm",
-              "op": "layer_norm",
-              "output_shape": [
-                64,
-                32
-              ]
-            },
-            {
-              "arithmetic_intensity": 8.062015503875969,
-              "depth": 4,
-              "flops": 266240,
-              "logical_bytes": 33024,
-              "name": "text_head",
-              "op": "linear",
-              "output_shape": [
-                64,
-                64
-              ]
-            },
-            {
-              "arithmetic_intensity": 0.0,
-              "depth": 5,
-              "flops": 0,
-              "logical_bytes": 0,
-              "name": "reshape_3",
-              "op": "reshape",
-              "output_shape": [
-                4,
-                16,
-                64
-              ]
-            },
-            {
               "arithmetic_intensity": 11.512673753066231,
               "depth": 1,
               "flops": 3604480,
@@ -3528,6 +3492,68 @@
               "output_shape": [
                 4,
                 1,
+                64
+              ]
+            },
+            {
+              "arithmetic_intensity": 0.0,
+              "depth": 1,
+              "flops": 0,
+              "logical_bytes": 41472,
+              "name": "text_embedding",
+              "op": "embedding",
+              "output_shape": [
+                4,
+                16,
+                32
+              ]
+            },
+            {
+              "arithmetic_intensity": 0.0,
+              "depth": 2,
+              "flops": 0,
+              "logical_bytes": 0,
+              "name": "reshape_2",
+              "op": "reshape",
+              "output_shape": [
+                64,
+                32
+              ]
+            },
+            {
+              "arithmetic_intensity": 0.7384615384615385,
+              "depth": 3,
+              "flops": 12288,
+              "logical_bytes": 16640,
+              "name": "text_norm",
+              "op": "layer_norm",
+              "output_shape": [
+                64,
+                32
+              ]
+            },
+            {
+              "arithmetic_intensity": 8.062015503875969,
+              "depth": 4,
+              "flops": 266240,
+              "logical_bytes": 33024,
+              "name": "text_head",
+              "op": "linear",
+              "output_shape": [
+                64,
+                64
+              ]
+            },
+            {
+              "arithmetic_intensity": 0.0,
+              "depth": 5,
+              "flops": 0,
+              "logical_bytes": 0,
+              "name": "reshape_3",
+              "op": "reshape",
+              "output_shape": [
+                4,
+                16,
                 64
               ]
             },
@@ -3720,109 +3746,6 @@
           },
           "nodes": [
             {
-              "attrs": {},
-              "inputs": [
-                "input_1",
-                "text_embedding_weight_5"
-              ],
-              "name": "text_embedding",
-              "op": "embedding",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  4,
-                  16,
-                  32
-                ]
-              }
-            },
-            {
-              "attrs": {
-                "shape": [
-                  64,
-                  32
-                ]
-              },
-              "inputs": [
-                "text_embedding"
-              ],
-              "name": "reshape_2",
-              "op": "reshape",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  64,
-                  32
-                ]
-              }
-            },
-            {
-              "attrs": {
-                "eps": 1e-05,
-                "normalized_shape": [
-                  32
-                ]
-              },
-              "inputs": [
-                "reshape_2",
-                "text_norm_weight_6",
-                "text_norm_bias_7"
-              ],
-              "name": "text_norm",
-              "op": "layer_norm",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  64,
-                  32
-                ]
-              }
-            },
-            {
-              "attrs": {},
-              "inputs": [
-                "text_norm",
-                "text_head_weight_t_8",
-                "text_head_bias_9"
-              ],
-              "name": "text_head",
-              "op": "linear",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  64,
-                  64
-                ]
-              }
-            },
-            {
-              "attrs": {
-                "shape": [
-                  4,
-                  16,
-                  64
-                ]
-              },
-              "inputs": [
-                "text_head"
-              ],
-              "name": "reshape_3",
-              "op": "reshape",
-              "spec": {
-                "device": "cpu",
-                "dtype": "float32",
-                "shape": [
-                  4,
-                  16,
-                  64
-                ]
-              }
-            },
-            {
               "attrs": {
                 "dilation": [
                   1,
@@ -3934,6 +3857,109 @@
                 "shape": [
                   4,
                   1,
+                  64
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "input_1",
+                "text_embedding_weight_5"
+              ],
+              "name": "text_embedding",
+              "op": "embedding",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  4,
+                  16,
+                  32
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "shape": [
+                  64,
+                  32
+                ]
+              },
+              "inputs": [
+                "text_embedding"
+              ],
+              "name": "reshape_2",
+              "op": "reshape",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  32
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "eps": 1e-05,
+                "normalized_shape": [
+                  32
+                ]
+              },
+              "inputs": [
+                "reshape_2",
+                "text_norm_weight_6",
+                "text_norm_bias_7"
+              ],
+              "name": "text_norm",
+              "op": "layer_norm",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  32
+                ]
+              }
+            },
+            {
+              "attrs": {},
+              "inputs": [
+                "text_norm",
+                "text_head_weight_t_8",
+                "text_head_bias_9"
+              ],
+              "name": "text_head",
+              "op": "linear",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  64,
+                  64
+                ]
+              }
+            },
+            {
+              "attrs": {
+                "shape": [
+                  4,
+                  16,
+                  64
+                ]
+              },
+              "inputs": [
+                "text_head"
+              ],
+              "name": "reshape_3",
+              "op": "reshape",
+              "spec": {
+                "device": "cpu",
+                "dtype": "float32",
+                "shape": [
+                  4,
+                  16,
                   64
                 ]
               }
@@ -4077,33 +4103,51 @@
               "size_bytes": 16384,
               "slot": 2
             },
+            "fusion_1": {
+              "first": 12,
+              "last": 13,
+              "size_bytes": 16384,
+              "slot": 0
+            },
             "fusion_2": {
               "first": 13,
               "last": 14,
               "size_bytes": 2560,
+              "slot": 2
+            },
+            "gelu": {
+              "first": 1,
+              "last": 3,
+              "size_bytes": 262144,
+              "slot": 0
+            },
+            "text_embedding": {
+              "first": 5,
+              "last": 7,
+              "size_bytes": 8192,
               "slot": 0
             },
             "text_head": {
-              "first": 3,
+              "first": 8,
               "last": 10,
               "size_bytes": 16384,
               "slot": 0
             },
             "vision_head": {
-              "first": 8,
+              "first": 3,
               "last": 10,
               "size_bytes": 1024,
               "slot": 1
             }
           },
           "naive_bytes": 897536,
-          "planned_bytes": 33792,
+          "planned_bytes": 279552,
           "slot_specs": {
             "0": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
-                4096
+                65536
               ]
             },
             "1": {
@@ -4127,7 +4171,7 @@
           "flops": 0,
           "logical_bytes": 32768,
           "nodes": 1,
-          "planned_bytes": 863744
+          "planned_bytes": 617984
         },
         "optimized_nodes": 15,
         "original_analysis": {
@@ -4476,108 +4520,108 @@
       "timings": {
         "eager": {
           "count": 25,
-          "max_ms": 26.729676,
-          "median_ms": 2.590222,
-          "min_ms": 1.649256,
-          "p95_ms": 9.08083199999999,
+          "max_ms": 268.688366,
+          "median_ms": 2.23021,
+          "min_ms": 1.671134,
+          "p95_ms": 121.73854739999965,
           "samples_ms": [
-            2.504663,
-            3.243358,
-            1.897322,
-            1.649256,
-            2.198821,
-            2.091347,
-            3.584635,
-            2.345703,
-            3.263614,
-            2.474345,
-            6.78078,
-            2.005825,
-            3.09098,
-            5.766577,
-            2.848837,
-            2.488795,
-            2.402786,
-            2.667396,
-            2.174069,
-            5.9183,
-            2.316726,
-            9.655845,
-            2.590222,
-            26.729676,
-            3.435176
+            2.510266,
+            1.972256,
+            2.156947,
+            2.56262,
+            6.089294,
+            2.826639,
+            147.293219,
+            2.24864,
+            2.23021,
+            1.754286,
+            2.078458,
+            2.066142,
+            2.19905,
+            1.730756,
+            2.030048,
+            4.181096,
+            2.9318,
+            2.01908,
+            2.400549,
+            1.671134,
+            268.688366,
+            19.519861,
+            1.906455,
+            11.788943,
+            1.98058
           ],
           "speedup_vs_eager": 1.0
         },
         "optimized": {
           "count": 25,
-          "max_ms": 18.011429,
-          "median_ms": 2.698763,
-          "min_ms": 1.589038,
-          "p95_ms": 4.360912399999999,
+          "max_ms": 6.501094,
+          "median_ms": 2.097898,
+          "min_ms": 1.549165,
+          "p95_ms": 4.492111399999999,
           "samples_ms": [
-            2.229533,
-            3.402818,
-            1.589038,
-            3.126252,
-            2.698763,
-            1.948474,
-            2.276349,
-            2.253728,
-            3.287806,
-            2.150861,
-            2.857892,
-            1.886589,
-            2.004595,
-            2.923524,
-            3.523105,
-            3.108561,
-            2.191834,
-            4.439441,
-            2.084282,
-            4.046798,
-            2.572981,
-            2.935366,
-            18.011429,
-            4.02237,
-            2.179705
+            2.591554,
+            1.804499,
+            1.655767,
+            1.978865,
+            2.256403,
+            2.343818,
+            1.705773,
+            1.617415,
+            6.501094,
+            3.620769,
+            2.097898,
+            1.757203,
+            2.287026,
+            1.868382,
+            2.412735,
+            2.214222,
+            3.951369,
+            1.764864,
+            4.627297,
+            1.647505,
+            1.72832,
+            2.107925,
+            1.592337,
+            3.439562,
+            1.549165
           ],
-          "speedup_vs_eager": 0.9597812034624751
+          "speedup_vs_eager": 1.0630688431944737
         },
         "unoptimized": {
           "count": 25,
-          "max_ms": 7.803069,
-          "median_ms": 2.429569,
-          "min_ms": 1.608292,
-          "p95_ms": 6.058757999999999,
+          "max_ms": 20.451532,
+          "median_ms": 2.252701,
+          "min_ms": 1.555071,
+          "p95_ms": 4.555589199999998,
           "samples_ms": [
-            2.343462,
-            3.035267,
-            1.608292,
-            2.160357,
-            3.650823,
-            2.047476,
-            3.17273,
-            2.429569,
-            2.341516,
-            2.308341,
-            1.65585,
-            2.864793,
-            4.161743,
-            2.198686,
-            3.628304,
-            5.870106,
-            2.066953,
-            1.914522,
-            1.877832,
-            4.010036,
-            6.105921,
-            4.209658,
-            3.155615,
-            7.803069,
-            2.303916
+            3.372965,
+            1.62624,
+            2.317706,
+            2.688117,
+            3.004733,
+            4.095554,
+            1.967793,
+            2.709264,
+            2.137716,
+            1.741517,
+            2.252701,
+            1.817231,
+            3.346476,
+            1.555071,
+            3.730222,
+            1.888788,
+            3.727534,
+            1.573466,
+            1.859965,
+            1.864926,
+            2.137611,
+            20.451532,
+            4.670598,
+            3.003664,
+            1.570644
           ],
-          "speedup_vs_eager": 1.0661240738583675
+          "speedup_vs_eager": 0.9900159852550339
         }
       },
       "unoptimized": {
@@ -5373,42 +5417,60 @@
               "first": 12,
               "last": 13,
               "size_bytes": 16384,
-              "slot": 1
+              "slot": 0
+            },
+            "fusion_1": {
+              "first": 13,
+              "last": 14,
+              "size_bytes": 16384,
+              "slot": 2
             },
             "fusion_2": {
               "first": 14,
               "last": 15,
               "size_bytes": 2560,
-              "slot": 1
+              "slot": 0
+            },
+            "gelu": {
+              "first": 1,
+              "last": 3,
+              "size_bytes": 262144,
+              "slot": 0
+            },
+            "text_embedding": {
+              "first": 5,
+              "last": 7,
+              "size_bytes": 8192,
+              "slot": 0
             },
             "text_head": {
               "first": 8,
               "last": 10,
               "size_bytes": 16384,
-              "slot": 1
+              "slot": 0
             },
             "vision_head": {
               "first": 3,
               "last": 10,
               "size_bytes": 1024,
-              "slot": 0
+              "slot": 1
             }
           },
           "naive_bytes": 913920,
-          "planned_bytes": 33792,
+          "planned_bytes": 279552,
           "slot_specs": {
             "0": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
-                256
+                65536
               ]
             },
             "1": {
               "device": "cpu",
               "dtype": "float32",
               "shape": [
-                4096
+                256
               ]
             },
             "2": {
@@ -5425,7 +5487,7 @@
           "flops": 0,
           "logical_bytes": 0,
           "nodes": 0,
-          "planned_bytes": 880128
+          "planned_bytes": 634368
         },
         "optimized_nodes": 16,
         "original_analysis": {

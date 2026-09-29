@@ -444,7 +444,7 @@ Everything below is checked in under [`benchmarks/results/`](benchmarks/results/
 
 ### Compiler suite: MLP and residual MLPs
 
-- **Source:** clean commit `92f3dfddd63e1d5d80b32d7d1f1d87397f9e6cf7`, captured 2026-09-28.
+- **Source:** clean commit `a49cf9f2e2ba98b291648f56890c72f04ee9f2d4`, captured 2026-09-29.
 - **Host:** x86_64 macOS 26.6.2, Python 3.12.14, PyTorch 2.2.2, CPU FP32, one Torch thread.
 - **Method:** 5 warmups then 25 measured calls per variant, rotating variant order, synchronized host wall clock, whole invocation including Python dispatch and output ownership; compilation and tuning excluded.
 - **Gate:** all six workloads passed eager-output comparison before timing. Raw p95 values show substantial tail variability; no confidence interval or repeat-run stability is claimed.
@@ -453,14 +453,14 @@ Everything below is checked in under [`benchmarks/results/`](benchmarks/results/
 
 | Workload `batch_width_hidden` | Eager median ms | Unoptimized median ms | Optimized median ms | Optimized p95 ms | Eager / optimized |
 |---|---:|---:|---:|---:|---:|
-| `mlp_8_64_128` | 0.086 | 0.104 | 0.082 | 0.463 | 1.055x |
-| `residual_8_64_128` | 0.125 | 0.161 | 0.135 | 0.294 | 0.927x |
-| `mlp_32_128_256` | 0.272 | 0.255 | 0.242 | 1.057 | 1.123x |
-| `residual_32_128_256` | 0.328 | 0.277 | 0.262 | 0.744 | 1.251x |
-| `mlp_64_256_512` | 1.340 | 1.040 | 1.166 | 3.503 | 1.149x |
-| `residual_64_256_512` | 1.375 | 1.307 | 1.284 | 2.081 | 1.071x |
+| `mlp_8_64_128` | 0.236 | 0.174 | 0.247 | 2.791 | 0.958x |
+| `residual_8_64_128` | 0.178 | 0.153 | 0.194 | 0.562 | 0.922x |
+| `mlp_32_128_256` | 0.427 | 0.363 | 0.344 | 2.799 | 1.241x |
+| `residual_32_128_256` | 0.404 | 0.304 | 0.332 | 5.121 | 1.216x |
+| `mlp_64_256_512` | 1.249 | 1.059 | 1.466 | 5.198 | 0.852x |
+| `residual_64_256_512` | 1.139 | 1.079 | 1.142 | 3.749 | 0.998x |
 
-A ratio below one is a **slowdown**. Five of six workloads now run faster than eager on this host, helped by the persistent slot arena and direct `out=` writes; the smallest residual MLP is still slower because per-call interpreter overhead dominates at that size. Medians drift noticeably between captures on this machine, so treat every ratio as noisy evidence rather than a portable speedup guarantee.
+A ratio below one is a **slowdown**. The mid-size workloads now run about 1.22x faster than eager with the fused projection slot writes, the largest residual is at parity, and the smallest graphs are still slower because per-call interpreter dispatch dominates at that size. Medians drift noticeably between captures on this machine, so treat every ratio as noisy evidence rather than a portable speedup guarantee.
 
 ![Compiler-planned intermediate storage](benchmarks/results/compiler-memory.svg)
 
@@ -468,18 +468,18 @@ The memory chart is reconstructed from captured IR and slot plans, not from an R
 
 | Workload | Naive buffers KiB | Unoptimized slots KiB | Optimized slots KiB | Nodes before -> after |
 |---|---:|---:|---:|---:|
-| `mlp_8_64_128` | 8 | 4 | 0 | 3 -> 2 |
-| `residual_8_64_128` | 10 | 4 | 2 | 4 -> 3 |
-| `mlp_32_128_256` | 64 | 32 | 0 | 3 -> 2 |
-| `residual_32_128_256` | 80 | 32 | 16 | 4 -> 3 |
-| `mlp_64_256_512` | 256 | 128 | 0 | 3 -> 2 |
-| `residual_64_256_512` | 320 | 128 | 64 | 4 -> 3 |
+| `mlp_8_64_128` | 8 | 8 | 4 | 3 -> 2 |
+| `residual_8_64_128` | 10 | 8 | 6 | 4 -> 3 |
+| `mlp_32_128_256` | 64 | 64 | 32 | 3 -> 2 |
+| `residual_32_128_256` | 80 | 64 | 48 | 4 -> 3 |
+| `mlp_64_256_512` | 256 | 256 | 128 | 3 -> 2 |
+| `residual_64_256_512` | 320 | 256 | 192 | 4 -> 3 |
 
-Fusion removes one node per graph. The arena covers only `out=`-capable intermediates: on the plain MLPs it drops to zero because the single internal `fused_linear_gelu` result is a refcounted temporary, while the residual variants keep one `add` result slotted. `naive_bytes` still counts every internal intermediate, slotted or not.
+Fusion removes one node per graph. `fused_linear_gelu` now writes its GEMM into a slot and applies the GELU epilogue in place, so every workload's intermediates are arena-resident rather than allocator temporaries; the optimized plans still collapse one slot versus the unoptimized graphs on the residual variants. `naive_bytes` still counts every internal intermediate, slotted or not.
 
 ### Neural suite: transformer block and vision/text fusion
 
-- **Source:** clean commit `92f3dfddd63e1d5d80b32d7d1f1d87397f9e6cf7`, captured 2026-09-28.
+- **Source:** clean commit `a49cf9f2e2ba98b291648f56890c72f04ee9f2d4`, captured 2026-09-29.
 - **Host:** the same x86_64 macOS / Python 3.12.14 / PyTorch 2.2.2 / CPU FP32 / one-thread environment.
 - **Transformer:** batch 4, sequence 24, hidden 128, 8 heads, causal SDPA, 256-wide tanh-GELU feed-forward.
 - **Vision/text:** batch 4, 3x32x32 images, 16 int64 tokens, a 16-channel Conv2d path, LayerNorm text path, additive fusion, GELU class head.
@@ -488,10 +488,10 @@ Fusion removes one node per graph. The arena covers only `out=`-capable intermed
 
 | Workload | Eager median ms | Unoptimized median ms | Optimized median ms | Optimized p95 ms | Eager / optimized |
 |---|---:|---:|---:|---:|---:|
-| `transformer_block_4x24x128` | 2.300 | 2.798 | 2.584 | 6.667 | 0.890x |
-| `vision_text_fusion_4x32_16` | 2.590 | 2.430 | 2.699 | 4.361 | 0.960x |
+| `transformer_block_4x24x128` | 2.465 | 1.990 | 2.026 | 4.340 | 1.217x |
+| `vision_text_fusion_4x32_16` | 2.230 | 2.253 | 2.098 | 4.492 | 1.063x |
 
-The optimized interpreter lands just below eager parity on this noisy host in this capture, and the optimized medians beat the unoptimized graph on the transformer. The structural evidence is stronger than the timing: `fuse_shared_projections` collapses the three QKV projections into one wide `linear` plus three borrowed `narrow` views, planned arena storage drops from 240 KiB to 192 KiB, modeled logical traffic falls by 288 KiB now that view nodes charge zero bytes, and all four attention transposes plan as borrowed views. The fusion workload goes from 16 to 15 nodes and drops 32 KiB of modeled traffic while keeping the same 33 KiB planned storage.
+Both neural workloads now measure **faster than eager** on this host, a first for the CPU interpreter: the transformer at 1.217x and the fusion model at 1.063x. The structural evidence explains why: `fuse_shared_projections` collapses the three QKV projections into one wide `linear` plus three borrowed `narrow` views, the attention transposes plan as borrowed views, and with `softmax`/`gelu`/`fused_linear_gelu`/`embedding` now writing into the slot arena almost every intermediate avoids a per-call allocation. Planned arena storage drops from 336 KiB unoptimized to 240 KiB optimized on the transformer, and modeled logical traffic falls by 288 KiB now that view nodes charge zero bytes. The fusion workload goes from 16 to 15 nodes and drops 32 KiB of modeled traffic at 273 KiB planned storage.
 
 | Workload | Optimized operators | Modeled MFLOPs | Logical KiB | Arithmetic intensity | Critical path |
 |---|---|---:|---:|---:|---:|

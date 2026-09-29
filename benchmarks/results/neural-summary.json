@@ -1,9 +1,9 @@
 {
   "environment": {
-    "captured_at_utc": "2026-09-28T11:18:23.369062+00:00",
+    "captured_at_utc": "2026-09-29T11:18:40.878558+00:00",
     "cuda_runtime": null,
     "device": "cpu",
-    "git_commit": "92f3dfddd63e1d5d80b32d7d1f1d87397f9e6cf7",
+    "git_commit": "a49cf9f2e2ba98b291648f56890c72f04ee9f2d4",
     "git_dirty": false,
     "machine": "x86_64",
     "percentile_method": "linear_interpolation_at_(n-1)*q",
@@ -21,7 +21,7 @@
       "delta_critical_path_ops": 0,
       "delta_logical_kib": 288.0,
       "delta_nodes": 0,
-      "eager_ms": 2.300255,
+      "eager_ms": 2.464726,
       "logical_kib": 1765.5,
       "mflops": 26.28288,
       "name": "transformer_block_4x24x128",
@@ -35,15 +35,15 @@
         "sdpa": 1,
         "transpose": 4
       },
-      "optimized_ms": 2.583818,
+      "optimized_ms": 2.02599,
       "optimized_nodes": 24,
-      "optimized_p95_ms": 6.666811599999998,
-      "optimized_planned_kib": 192.0,
+      "optimized_p95_ms": 4.3399481999999985,
+      "optimized_planned_kib": 240.0,
       "original_nodes": 24,
-      "speedup": 0.8902542671349143,
-      "unoptimized_ms": 2.797794,
+      "speedup": 1.2165538822995177,
+      "unoptimized_ms": 1.989519,
       "unoptimized_naive_kib": 1200.0,
-      "unoptimized_planned_kib": 240.0
+      "unoptimized_planned_kib": 336.0
     },
     {
       "arithmetic_intensity": 2.4483713665893037,
@@ -51,7 +51,7 @@
       "delta_critical_path_ops": 1,
       "delta_logical_kib": 32.0,
       "delta_nodes": 1,
-      "eager_ms": 2.590222,
+      "eager_ms": 2.23021,
       "logical_kib": 5362.2890625,
       "mflops": 13.443968,
       "name": "vision_text_fusion_4x32_16",
@@ -65,16 +65,16 @@
         "linear": 3,
         "reshape": 6
       },
-      "optimized_ms": 2.698763,
+      "optimized_ms": 2.097898,
       "optimized_nodes": 15,
-      "optimized_p95_ms": 4.360912399999999,
-      "optimized_planned_kib": 33.0,
+      "optimized_p95_ms": 4.492111399999999,
+      "optimized_planned_kib": 273.0,
       "original_nodes": 16,
-      "speedup": 0.9597812034624751,
-      "unoptimized_ms": 2.429569,
+      "speedup": 1.0630688431944737,
+      "unoptimized_ms": 2.252701,
       "unoptimized_naive_kib": 892.5,
-      "unoptimized_planned_kib": 33.0
+      "unoptimized_planned_kib": 273.0
     }
   ],
-  "source_sha256": "d8781d955001bcdcdb830a268531a3f38bafc55d377330220bbefa538ef5351d"
+  "source_sha256": "880072d9be8c1d7a00d726546c718b46e4bc7d11d4e03d89ca2337143122776b"
 }
