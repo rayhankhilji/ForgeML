@@ -256,6 +256,17 @@ def test_neural_operator_rejections():
         b.add("ln", "layer_norm", ("x",), normalized_shape=(5,), eps=1e-5)
     with pytest.raises(GraphError, match="rank-4"):
         b.add("attn", "sdpa", ("q", "q", "x"), is_causal=True)
+    b.constant("fmask", torch.zeros(1, 2, 3, 3))
+    with pytest.raises(GraphError, match="is_causal"):
+        b.add("attn2", "sdpa", ("q", "q", "q", "fmask"), is_causal=True)
+    bad = GraphBuilder({"q": spec(1, 2, 3, 4)})
+    bad.constant("badmask", torch.zeros(1, 2, 3, 5))
+    with pytest.raises(GraphError, match="attn_mask"):
+        bad.add("attn", "sdpa", ("q", "q", "q", "badmask"), is_causal=False)
+    b2 = GraphBuilder({"q": spec(1, 2, 3, 4)})
+    b2.constant("imask", torch.ones(1, 2, 3, 3, dtype=torch.int64))
+    with pytest.raises(GraphError, match="attn_mask"):
+        b2.add("attn", "sdpa", ("q", "q", "q", "imask"), is_causal=False)
     b.constant("bad_conv", torch.ones(4, 2, 3, 3))
     with pytest.raises(GraphError, match="channels/groups"):
         b.add(
@@ -270,6 +281,17 @@ def test_neural_operator_rejections():
     b.constant("emb_w", torch.ones(5, 3))
     with pytest.raises(GraphError, match="int64"):
         b.add("emb", "embedding", ("x", "emb_w"))
+
+
+def test_sdpa_optional_mask_specs():
+    b = GraphBuilder({"q": spec(1, 2, 3, 4)})
+    b.constant("fmask", torch.zeros(1, 1, 3, 3))
+    b.constant("bmask", torch.ones(3, 3, dtype=torch.bool))
+    b.add("masked", "sdpa", ("q", "q", "q", "fmask"), is_causal=False)
+    b.add("bmasked", "sdpa", ("q", "q", "q", "bmask"), is_causal=False)
+    g = b.finish(("masked", "bmasked"))
+    assert g.specs()["masked"].shape == (1, 2, 3, 4)
+    assert g.specs()["bmasked"].shape == (1, 2, 3, 4)
 
 
 def test_narrow_spec_and_bounds():

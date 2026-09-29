@@ -373,7 +373,7 @@ def test_static_arange_and_embedding():
     parity(Positional(), torch.randn(2, 5, 4))
 
 
-def test_sdpa_rejects_dropout_and_mask():
+def test_sdpa_rejects_dropout_and_gqa():
     class DropoutAttention(nn.Module):
         def forward(self, q, k, v):
             return F.scaled_dot_product_attention(q, k, v, dropout_p=0.2)
@@ -382,12 +382,44 @@ def test_sdpa_rejects_dropout_and_mask():
     with pytest.raises(UnsupportedOperator, match="dropout"):
         from_torch(DropoutAttention(), (q, q, q))
 
-    class MaskedAttention(nn.Module):
+    class GQAAttention(nn.Module):
         def forward(self, q, k, v):
-            return F.scaled_dot_product_attention(q, k, v, attn_mask=torch.ones(3, 3))
+            return F.scaled_dot_product_attention(q, k, v, enable_gqa=True)
 
-    with pytest.raises(UnsupportedOperator, match="attn_mask"):
-        from_torch(MaskedAttention(), (q, q, q))
+    with pytest.raises(UnsupportedOperator, match="enable_gqa"):
+        from_torch(GQAAttention(), (q, q, q))
+
+
+def test_sdpa_float_and_bool_mask_parity():
+    class FloatMasked(nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.register_buffer("mask", torch.zeros(1, 1, 3, 3))
+
+        def forward(self, q, k, v):
+            return F.scaled_dot_product_attention(q, k, v, attn_mask=self.mask)
+
+    q = torch.randn(1, 2, 3, 4)
+    g = parity(FloatMasked().eval(), q, q, q)
+    assert g.nodes[0].op == "sdpa" and len(g.nodes[0].inputs) == 4
+
+    class BoolMasked(nn.Module):
+        def forward(self, q, k, v, mask):
+            return F.scaled_dot_product_attention(q, k, v, attn_mask=mask)
+
+    mask = torch.ones(3, 3, dtype=torch.bool).tril()
+    parity(BoolMasked().eval(), q, q, q, mask)
+
+
+def test_sdpa_mask_plus_causal_rejected():
+    class Both(nn.Module):
+        def forward(self, q, k, v, mask):
+            return F.scaled_dot_product_attention(q, k, v, attn_mask=mask, is_causal=True)
+
+    q = torch.randn(1, 2, 3, 4)
+    mask = torch.ones(3, 3, dtype=torch.bool).tril()
+    with pytest.raises(GraphError, match="is_causal"):
+        from_torch(Both().eval(), (q, q, q, mask))
 
 
 def test_conv_and_embedding_option_rejections():

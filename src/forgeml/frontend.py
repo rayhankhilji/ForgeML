@@ -542,8 +542,6 @@ class _Lowerer:
                     "enable_gqa": False,
                 },
             )
-            if bound["attn_mask"] is not None:
-                raise UnsupportedOperator(f"sdpa attn_mask at {name!r} is not supported")
             if self._literal(bound["dropout_p"]) != 0:
                 raise UnsupportedOperator(f"sdpa dropout_p at {name!r} must be zero")
             if self._literal(bound["enable_gqa"]) is not False:
@@ -552,14 +550,17 @@ class _Lowerer:
             if not isinstance(is_causal, bool):
                 raise UnsupportedOperator(f"sdpa is_causal at {name!r} must be a bool")
             scale = self._literal(bound["scale"])
+            inputs = (
+                self._arg(bound["query"]),
+                self._arg(bound["key"]),
+                self._arg(bound["value"]),
+            )
+            if bound["attn_mask"] is not None:
+                inputs += (self._arg(bound["attn_mask"]),)
             return self.builder.add(
                 name,
                 "sdpa",
-                (
-                    self._arg(bound["query"]),
-                    self._arg(bound["key"]),
-                    self._arg(bound["value"]),
-                ),
+                inputs,
                 is_causal=is_causal,
                 scale=scale,
             )

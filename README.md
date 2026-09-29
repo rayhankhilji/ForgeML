@@ -210,7 +210,7 @@ The operator set is explicit and bounded. Each op has a fixed arity, a whitelist
 | `narrow` | 1 | Static `[start, start+length)` slice on one dim; produced only by the shared-projection pass; planned as a borrowed view |
 | `softmax` | 1 | Explicit static axis; dtype override rejected |
 | `layer_norm` | 1 or 3 | Static trailing `normalized_shape`; paired affine tensors or none; finite positive `eps` |
-| `sdpa` | 3 | Rank-4 `[batch, heads, seq, head_dim]`; equal K/V shapes; inference-only; `is_causal` flag and optional finite positive `scale`; no mask, dropout, or GQA |
+| `sdpa` | 3-4 | Rank-4 `[batch, heads, seq, head_dim]`; equal K/V shapes; inference-only; `is_causal` flag and optional finite positive `scale`; optional `attn_mask` broadcastable to `[B, H, Q, K]` (bool or query dtype, mutually exclusive with `is_causal`); no dropout or GQA |
 | `conv2d` | 2-3 | NCHW input, OIHW weight, optional 1-D bias; positive stride/dilation, non-negative padding, valid groups; zero padding only |
 | `embedding` | 2 | Int64 indices into a rank-2 `[vocab, dim]` table; padding_idx/max_norm/sparse module options rejected |
 
@@ -226,7 +226,7 @@ Anything outside this subset fails with an explicit `UnsupportedOperator` instea
 
 ### Deliberately not supported
 
-Training and gradients through compiled execution, dynamic control flow, general dynamic shapes, nonzero-padding Conv2d modes, attention masks/dropout/GQA, sparse or normalizing embedding variants, arbitrary Python side effects, nested output structures, arbitrary ONNX domains, and pretrained-model loading. FX tracing executes Python from the supplied module: compile only trusted models.
+Training and gradients through compiled execution, dynamic control flow, general dynamic shapes, nonzero-padding Conv2d modes, attention dropout and GQA/MQA, sparse or normalizing embedding variants, arbitrary Python side effects, nested output structures, arbitrary ONNX domains, and pretrained-model loading. FX tracing executes Python from the supplied module: compile only trusted models.
 
 ## Optimization passes
 
@@ -630,7 +630,7 @@ The suite covers IR rejection paths, FX/ONNX lowering, exact and approximate act
 Natural next steps, each to land with an executable contract and a regression test before any performance claim:
 
 1. Symbolic shape constraints and bounded dynamic shapes.
-2. Attention masks and GQA/MQA forms for `sdpa`.
+2. GQA/MQA forms for `sdpa`.
 3. Layout-aware fusion beyond the epilogue and shared-projection patterns.
 4. CUDA graph capture for the compiled executor.
 5. Paged KV storage and prefix sharing in Nebula.

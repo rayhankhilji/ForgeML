@@ -44,7 +44,8 @@ def _node_flops(node: Node, inputs: list[TensorSpec]) -> int:
             full = batch * heads * q_len * kv_len
             causal = batch * heads * ((q_len * (q_len + 1)) // 2)
             pairs = min(full, causal)
-        return 2 * pairs * (2 * head_dim) + 5 * pairs
+        # mask apply (add or select) costs one op per attention pair
+        return 2 * pairs * (2 * head_dim) + (6 if len(inputs) == 4 else 5) * pairs
     if node.op == "conv2d":
         _, _, out_h, out_w = out.shape
         out_channels, in_per_group, kernel_h, kernel_w = inputs[1].shape

@@ -63,6 +63,7 @@ def evaluate(op: str, args: tuple[torch.Tensor, ...], attrs: dict) -> torch.Tens
             args[0],
             args[1],
             args[2],
+            attn_mask=args[3] if len(args) == 4 else None,
             dropout_p=0.0,
             is_causal=attrs["is_causal"],
             scale=attrs.get("scale"),

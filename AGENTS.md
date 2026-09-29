@@ -41,7 +41,9 @@ these exact modern dependency pins, compiler tests and package build at commit
   `layer_norm`,
   `sdpa`, `conv2d`, `embedding`, and `narrow` (static slice; emitted only by
   `fuse_shared_projections`). SDPA is inference-only: zero dropout, no
-  `attn_mask`, no `enable_gqa`. Conv2d is NCHW/OIHW with zero padding only.
+  `enable_gqa`; an optional fourth `attn_mask` input (bool or query-dtype
+  float, broadcastable to [B,H,Q,K]) is allowed and mutually exclusive with
+  `is_causal`. Conv2d is NCHW/OIHW with zero padding only.
   Embedding lookup requires int64 indices and rejects padding/max-norm/sparse
   module options. LayerNorm requires static trailing normalized dimensions.
   The core `linear` operator is rank-2; the FX frontend wraps higher-rank or

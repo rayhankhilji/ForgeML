@@ -162,15 +162,19 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
         "narrow": (1,),
         "fused_linear_gelu": (2, 3),
         "layer_norm": (1, 3),
-        "sdpa": (3,),
+        "sdpa": (3, 4),
         "conv2d": (2, 3),
         "embedding": (2,),
     }[op]
     if len(input_specs) not in expected_arity:
         choices = "/".join(str(v) for v in expected_arity)
         raise GraphError(f"op {op!r} expects {choices} inputs, got {len(input_specs)}")
-    if op in _FLOAT_ONLY_OPS and any(not s.dtype.is_floating_point for s in input_specs):
-        raise GraphError(f"op {op!r} requires floating-point inputs")
+    if op in _FLOAT_ONLY_OPS:
+        # For sdpa the optional fourth input is an attention mask that may be
+        # boolean; every required operand must still be floating-point.
+        gated = input_specs[:3] if op == "sdpa" else input_specs
+        if any(not s.dtype.is_floating_point for s in gated):
+            raise GraphError(f"op {op!r} requires floating-point inputs")
     if op == "matmul":
         a, b = input_specs
         if len(a.shape) != 2 or len(b.shape) != 2:
@@ -298,7 +302,7 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
         ):
             raise GraphError("layer_norm eps must be a finite positive number")
     if op == "sdpa":
-        q, k, v = input_specs
+        q, k, v = input_specs[:3]
         if not (len(q.shape) == len(k.shape) == len(v.shape) == 4):
             raise GraphError("sdpa requires rank-4 [batch, heads, sequence, dim] tensors")
         if q.shape[0:2] != k.shape[0:2] or k.shape != v.shape or q.shape[3] != k.shape[3]:
@@ -307,6 +311,21 @@ def infer_spec(op: str, input_specs: list[TensorSpec], attrs: dict[str, Any]) ->
             raise GraphError("sdpa dtype mismatch")
         if not isinstance(attrs["is_causal"], bool):
             raise GraphError("sdpa is_causal must be a bool")
+        if len(input_specs) == 4:
+            mask = input_specs[3]
+            if attrs["is_causal"]:
+                raise GraphError("sdpa attn_mask cannot be combined with is_causal")
+            if mask.dtype != torch.bool and mask.dtype != q.dtype:
+                raise GraphError("sdpa attn_mask must be bool or match the query dtype")
+            target = (q.shape[0], q.shape[1], q.shape[2], k.shape[2])
+            try:
+                merged = torch.broadcast_shapes(mask.shape, target)
+            except RuntimeError as e:
+                raise GraphError(
+                    f"sdpa attn_mask shape {mask.shape} cannot broadcast to {target}"
+                ) from e
+            if merged != target:
+                raise GraphError(f"sdpa attn_mask shape {mask.shape} cannot broadcast to {target}")
         scale = attrs.get("scale")
         if scale is not None and (
             not isinstance(scale, (int, float))
