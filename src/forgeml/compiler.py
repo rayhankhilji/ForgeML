@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 
 import torch
+import torch.nn.functional as F
 
 from forgeml import kernels
 from forgeml.analysis import graph_analysis
@@ -101,6 +102,28 @@ class CompiledModel:
             return lambda args: torch.mul(args[0], args[1], out=view)
         if node.op == "relu":
             return lambda args: torch.clamp_min(args[0], 0, out=view)
+        if node.op == "softmax":
+            dim = node.attrs["dim"]
+            return lambda args: torch.softmax(args[0], dim=dim, out=view)
+        if node.op == "gelu":
+            approx = node.attrs.get("approximate", "none")
+            return lambda args: F.gelu(args[0], approximate=approx, out=view)
+        if node.op == "embedding":
+            return lambda args: torch.ops.aten.embedding.out(
+                args[1], args[0], -1, False, False, out=view
+            )
+        if node.op == "fused_linear_gelu":
+            approx = node.attrs.get("approximate", "none")
+
+            def run_fused(args, node=node, view=view, approx=approx):
+                if len(args) == 3:
+                    torch.addmm(args[2], args[0], args[1], out=view)
+                else:
+                    torch.mm(args[0], args[1], out=view)
+                torch.ops.aten.gelu_.default(view, approximate=approx)
+                return view
+
+            return run_fused
         raise GraphError(f"no slot writer for op {node.op!r}")
 
     def autotune(self, *inputs: torch.Tensor, warmup: int = 3, repeats: int = 10) -> dict:

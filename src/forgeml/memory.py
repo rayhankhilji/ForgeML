@@ -9,7 +9,17 @@ VIEW_LIKE_OPS = {"reshape", "transpose", "narrow"}
 # Ops whose executor writes results through an out= parameter into a planned
 # slot. Every other internal node produces a fresh tensor that is managed by
 # refcounting rather than the slot arena.
-OUT_CAPABLE_OPS = {"matmul", "linear", "add", "mul", "relu"}
+OUT_CAPABLE_OPS = {
+    "matmul",
+    "linear",
+    "add",
+    "mul",
+    "relu",
+    "softmax",
+    "gelu",
+    "embedding",
+    "fused_linear_gelu",
+}
 
 
 @dataclass(frozen=True)

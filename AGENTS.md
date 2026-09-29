@@ -62,7 +62,9 @@ these exact modern dependency pins, compiler tests and package build at commit
   `reshape`/`transpose`/`narrow` intermediates are view/borrowed values; their
   producers' physical lifetimes must cover all view consumers before a slot may
   be reused. The slot arena covers only `out=`-capable ops (`matmul`, `linear`,
-  `add`, `mul`, `relu`); other intermediates are refcounted temporaries.
+  `add`, `mul`, `relu`, `softmax`, `gelu`, `embedding`,
+  `fused_linear_gelu`); `layer_norm`, `conv2d`, and `sdpa` intermediates are
+  refcounted temporaries (no out= path).
   `CompiledModel.__call__` reuses a persistent arena and is NOT reentrant.
 - Graph analysis in `explain()` is a static cost model, not hardware counters:
   report FLOP/logical-byte/arithmetic-intensity/critical-path bounds as modeled
