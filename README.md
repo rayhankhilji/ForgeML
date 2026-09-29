@@ -597,7 +597,7 @@ Each rank writes a Chrome trace. Inspect attention, feed-forward, KV appends, TP
 | Area | Implemented scope | Not claimed |
 |---|---|---|
 | Compiler | Static typed DAG and bounded neural operator set | General PyTorch compatibility, dynamic graphs, a mature optimizing compiler |
-| Attention/vision | Rank-4 inference SDPA, NCHW Conv2d, int64 embedding lookup | Masks, dropout attention, GQA/MQA, nonzero padding modes, paged/flash attention, pretrained checkpoints |
+| Attention/vision | Rank-4 inference SDPA with optional broadcast mask, NCHW Conv2d, int64 embedding lookup | Dropout attention, GQA/MQA, nonzero padding modes, paged/flash attention, pretrained checkpoints |
 | GPU codegen | Tiled GEMM / fused bias-GELU Triton template | Handwritten CUDA, arbitrary graph-to-one-kernel fusion, cuBLAS superiority; GPU path is hardware-gated and unvalidated here |
 | Memory | View-aware per-call intermediate-slot reuse | Whole-process peak-memory reduction or zero allocation; `planned_bytes` is not allocator peak |
 | Graph analysis | Static FLOP/traffic/intensity/critical-path accounting | Measured hardware counters or roofline predictions |

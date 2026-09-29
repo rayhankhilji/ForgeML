@@ -35,7 +35,73 @@ class CompiledModel:
         self._produced = {node.name for node in self.graph.nodes}
         # The slot arena is allocated once and reused across calls. __call__ is
         # therefore not reentrant; concurrent calls must synchronize externally.
-        self._slots: dict[int, torch.Tensor] | None = None
+        self._slots: dict[int, torch.Tensor] = {
+            slot: torch.empty(spec.shape, dtype=spec.dtype, device=spec.device)
+            for slot, spec in self.memory_plan.slot_specs.items()
+        }
+        self._views: dict[str, torch.Tensor] = {
+            node.name: self._slots[a.slot][: a.size_bytes // node.spec.dtype.itemsize].view(
+                node.spec.shape
+            )
+            for node in self.graph.nodes
+            if (a := self.memory_plan.allocations.get(node.name)) is not None
+        }
+        # Per-node closures pre-resolve dispatch: view materialization, output
+        # ownership, slot-backed out= writes, and Triton selection are all
+        # decided once at compile time rather than re-branched every call.
+        self._steps = [(node, self._make_step(node)) for node in self.graph.nodes]
+
+    def __setattr__(self, name, value):
+        object.__setattr__(self, name, value)
+        # Assigning a new kernel plan (e.g. forcing a backend for diagnostics
+        # or tuning) must rebuild the precompiled dispatch table.
+        if name == "kernel_plan" and "_views" in self.__dict__:
+            object.__setattr__(
+                self,
+                "_steps",
+                [(node, self._make_step(node)) for node in self.graph.nodes],
+            )
+
+    def _make_step(self, node):
+        use_triton = self.kernel_plan.get(node.name) == "triton"
+        is_output = node.name in self._outputs
+        if node.op in VIEW_LIKE_OPS:
+            if use_triton:
+                raise GraphError(f"no triton kernel for op {node.op!r}")
+            if is_output:
+                return lambda args: self._evaluate(node, args).clone()
+            return lambda args: self._evaluate(node, args)
+        if is_output:
+            if use_triton:
+                return lambda args: self._run_triton(node, args, None)
+            return lambda args: self._evaluate(node, args)
+        if use_triton:
+            if node.name in self._views:
+                view = self._views[node.name]
+
+                def run_triton_slot(args, node=node, view=view):
+                    return self._run_triton(node, args, view)
+
+                return run_triton_slot
+            return lambda args: self._run_triton(node, args, None)
+        if node.op not in OUT_CAPABLE_OPS:
+            # Ops without an out= variant produce a fresh tensor whose
+            # lifetime is managed by refcounting, not the slot arena.
+            return lambda args: self._evaluate(node, args)
+        view = self._views[node.name]
+        if node.op == "matmul":
+            return lambda args: torch.matmul(args[0], args[1], out=view)
+        if node.op == "linear":
+            if len(node.inputs) == 3:
+                return lambda args: torch.addmm(args[2], args[0], args[1], out=view)
+            return lambda args: torch.mm(args[0], args[1], out=view)
+        if node.op == "add":
+            return lambda args: torch.add(args[0], args[1], out=view)
+        if node.op == "mul":
+            return lambda args: torch.mul(args[0], args[1], out=view)
+        if node.op == "relu":
+            return lambda args: torch.clamp_min(args[0], 0, out=view)
+        raise GraphError(f"no slot writer for op {node.op!r}")
 
     def autotune(self, *inputs: torch.Tensor, warmup: int = 3, repeats: int = 10) -> dict:
         from forgeml.autotune import tune_graph
@@ -63,59 +129,11 @@ class CompiledModel:
             values[name] = t
         for name, t in self.graph.constants.items():
             values[name] = t
-        if self._slots is None:
-            self._slots = {
-                slot: torch.empty(spec.shape, dtype=spec.dtype, device=spec.device)
-                for slot, spec in self.memory_plan.slot_specs.items()
-            }
-        slots = self._slots
         outputs = self._outputs
         remaining = dict(self._remaining_template)
         with torch.inference_mode():
-            for node in self.graph.nodes:
-                args = tuple(values[i] for i in node.inputs)
-                is_output = node.name in outputs
-                use_triton = self.kernel_plan.get(node.name) == "triton"
-                if node.op in VIEW_LIKE_OPS:
-                    if use_triton:
-                        raise GraphError(f"no triton kernel for op {node.op!r}")
-                    out_value = self._evaluate(node, args)
-                    # Materialize view outputs so they never alias reusable slots.
-                    values[node.name] = out_value.clone() if is_output else out_value
-                elif is_output:
-                    values[node.name] = (
-                        self._run_triton(node, args, None)
-                        if use_triton
-                        else self._evaluate(node, args)
-                    )
-                elif node.op in OUT_CAPABLE_OPS:
-                    alloc = self.memory_plan.allocations[node.name]
-                    view = slots[alloc.slot][: alloc.size_bytes // node.spec.dtype.itemsize]
-                    view = view.view(node.spec.shape)
-                    if use_triton:
-                        self._run_triton(node, args, view)
-                    elif node.op == "matmul":
-                        torch.matmul(args[0], args[1], out=view)
-                    elif node.op == "linear":
-                        if len(args) == 3:
-                            torch.addmm(args[2], args[0], args[1], out=view)
-                        else:
-                            torch.mm(args[0], args[1], out=view)
-                    elif node.op == "add":
-                        torch.add(args[0], args[1], out=view)
-                    elif node.op == "mul":
-                        torch.mul(args[0], args[1], out=view)
-                    elif node.op == "relu":
-                        torch.clamp_min(args[0], 0, out=view)
-                    values[node.name] = view
-                else:
-                    # Ops without an out= variant produce a fresh tensor whose
-                    # lifetime is managed by refcounting, not the slot arena.
-                    values[node.name] = (
-                        self._run_triton(node, args, None)
-                        if use_triton
-                        else self._evaluate(node, args)
-                    )
+            for node, run in self._steps:
+                values[node.name] = run(tuple(values[i] for i in node.inputs))
                 for i in node.inputs:
                     if i in remaining:
                         remaining[i] -= 1
